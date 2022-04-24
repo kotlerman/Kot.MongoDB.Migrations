@@ -290,9 +290,8 @@ namespace Kot.MongoDB.Migrations.Tests
             var locatorMock = new Mock<IMigrationsLocator>();
             locatorMock.Setup(x => x.Locate()).Returns(migrations);
 
-            var options = new MigrationOptions
+            var options = new MigrationOptions(DatabaseName)
             {
-                DatabaseName = DatabaseName,
                 MigrationsCollectionName = MigrationsCollectionName,
                 TransactionScope = transactionScope
             };
