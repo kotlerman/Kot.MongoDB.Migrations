@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace Kot.MongoDB.Migrations
 {
-    public class Migrator
+    public class Migrator : IMigrator
     {
         private readonly IMigrationsLocator _migrationsLocator;
         private readonly IMongoClient _mongoClient;
