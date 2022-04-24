@@ -1,5 +1,6 @@
 using FluentAssertions;
 using Kot.MongoDB.Migrations.Tests.Extensions;
+using Microsoft.Extensions.Logging;
 using Mongo2Go;
 using MongoDB.Bson.Serialization.Attributes;
 using MongoDB.Driver;
@@ -28,7 +29,11 @@ namespace Kot.MongoDB.Migrations.Tests
         [SetUp]
         public void Setup()
         {
-            _runner = MongoDbRunner.Start(singleNodeReplSet: true);
+            ILogger logger = LoggerFactory
+                .Create(config => config.SetMinimumLevel(LogLevel.Error).AddConsole())
+                .CreateLogger("Mongo2Go");
+
+            _runner = MongoDbRunner.Start(singleNodeReplSet: true, logger: logger);
             _client = new MongoClient(_runner.ConnectionString);
             _db = _client.GetDatabase(DatabaseName);
             _histCollection = _db.GetCollection<MigrationHistory>(MigrationsCollectionName);
