@@ -13,15 +13,20 @@ namespace Kot.MongoDB.Migrations.DI
             return serviceCollection;
         }
 
-        public static IServiceCollection AddMongoMigrations(this IServiceCollection serviceCollection, string connectionString,
+        public static IServiceCollection AddMongoMigrations(this IServiceCollection serviceCollection, IMongoClient mongoClient,
             MigrationOptions options)
         {
-            var mongoClient = new MongoClient(connectionString);
             serviceCollection.AddSingleton(options);
             serviceCollection.AddSingleton<IMigrationsLocator, DIMigrationsLocator>();
             serviceCollection.AddSingleton<IMigrator>(provider => new Migrator(
                 provider.GetRequiredService<IMigrationsLocator>(), mongoClient, provider.GetRequiredService<MigrationOptions>()));
             return serviceCollection;
+        }
+
+        public static IServiceCollection AddMongoMigrations(this IServiceCollection serviceCollection, string connectionString,
+            MigrationOptions options)
+        {
+            return AddMongoMigrations(serviceCollection, new MongoClient(connectionString), options);
         }
     }
 }

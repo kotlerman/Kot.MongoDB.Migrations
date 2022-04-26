@@ -42,9 +42,35 @@ namespace Kot.MongoDB.Migrations.DI.Tests
             _runner.Dispose();
         }
 
-        [TestCase(false, TestName = "Migrate_AutoClient")]
-        [TestCase(true, TestName = "Migrate_ExternalClient")]
-        public async Task Migrate(bool externalClient)
+        [Test]
+        public async Task Migrate_WithExternalClient()
+        {
+            await Migrate((services, options) =>
+            {
+                services.AddSingleton(_client);
+                services.AddMongoMigrations(options);
+            });
+        }
+
+        [Test]
+        public async Task Migrate_WithSpecificClient()
+        {
+            await Migrate((services, options) =>
+            {
+                services.AddMongoMigrations(_client, options);
+            });
+        }
+
+        [Test]
+        public async Task Migrate_WithConnectionString()
+        {
+            await Migrate((services, options) =>
+            {
+                services.AddMongoMigrations(_runner.ConnectionString, options);
+            });
+        }
+
+        private async Task Migrate(Action<IServiceCollection, MigrationOptions> configureMigrations)
         {
             // Arrange
             var testValue = "TestValue";
@@ -54,16 +80,7 @@ namespace Kot.MongoDB.Migrations.DI.Tests
             var host = Host.CreateDefaultBuilder()
                 .ConfigureServices(services =>
                 {
-                    if (externalClient)
-                    {
-                        services.AddSingleton(_client);
-                        services.AddMongoMigrations(options);
-                    }
-                    else
-                    {
-                        services.AddMongoMigrations(_runner.ConnectionString, options);
-                    }
-                    
+                    configureMigrations(services, options);
                     services.AddSingleton<ITestService>(testService);
                     services.AddHostedService<HostedService>();
                 })
