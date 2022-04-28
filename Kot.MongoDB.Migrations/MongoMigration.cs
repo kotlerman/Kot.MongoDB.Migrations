@@ -1,4 +1,5 @@
 ﻿using MongoDB.Driver;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace Kot.MongoDB.Migrations
@@ -15,8 +16,8 @@ namespace Kot.MongoDB.Migrations
             Name = name;
         }
 
-        public abstract Task DownAsync(IMongoDatabase db, IClientSessionHandle session);
+        public abstract Task DownAsync(IMongoDatabase db, IClientSessionHandle session, CancellationToken cancellationToken);
 
-        public abstract Task UpAsync(IMongoDatabase db, IClientSessionHandle session);
+        public abstract Task UpAsync(IMongoDatabase db, IClientSessionHandle session, CancellationToken cancellationToken);
     }
 }

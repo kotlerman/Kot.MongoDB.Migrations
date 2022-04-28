@@ -110,7 +110,7 @@ namespace Kot.MongoDB.Migrations.DI.Tests
 
             public async Task StartAsync(CancellationToken cancellationToken)
             {
-                await _migrator.MigrateAsync();
+                await _migrator.MigrateAsync(cancellationToken: cancellationToken);
                 await _host.StopAsync(cancellationToken);
             }
 
@@ -126,13 +126,13 @@ namespace Kot.MongoDB.Migrations.DI.Tests
                 _testValue = testService.TestValue;
             }
 
-            public override async Task UpAsync(IMongoDatabase db, IClientSessionHandle session)
+            public override async Task UpAsync(IMongoDatabase db, IClientSessionHandle session, CancellationToken cancellationToken)
             {
                 var collection = db.GetCollection<TestDoc>(DocCollectionName);
-                await collection.InsertOneAsync(new TestDoc { Value = _testValue });
+                await collection.InsertOneAsync(new TestDoc { Value = _testValue }, null, cancellationToken);
             }
 
-            public override Task DownAsync(IMongoDatabase db, IClientSessionHandle session)
+            public override Task DownAsync(IMongoDatabase db, IClientSessionHandle session, CancellationToken cancellationToken)
                 => throw new NotImplementedException();
         }
 

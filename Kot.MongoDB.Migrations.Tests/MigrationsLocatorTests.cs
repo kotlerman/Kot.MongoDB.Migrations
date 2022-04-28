@@ -8,7 +8,6 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Reflection;
-using System.Threading.Tasks;
 
 namespace Kot.MongoDB.Migrations.Tests
 {
@@ -84,6 +83,7 @@ namespace Kot.MongoDB.Migrations.Tests
 
             return @$"
                 using MongoDB.Driver;
+                using System.Threading;
                 using System.Threading.Tasks;
                 using Kot.MongoDB.Migrations;
 
@@ -95,9 +95,11 @@ namespace Kot.MongoDB.Migrations.Tests
                         {{
                         }}
 
-                        public override Task DownAsync(IMongoDatabase db, IClientSessionHandle session) => Task.CompletedTask;
+                        public override Task DownAsync(IMongoDatabase db, IClientSessionHandle session, CancellationToken token)
+                            => Task.CompletedTask;
 
-                        public override Task UpAsync(IMongoDatabase db, IClientSessionHandle session) => Task.CompletedTask;
+                        public override Task UpAsync(IMongoDatabase db, IClientSessionHandle session, CancellationToken token)
+                            => Task.CompletedTask;
                     }}
                 }}
             ";

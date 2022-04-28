@@ -2,6 +2,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace Kot.MongoDB.Migrations
@@ -23,9 +24,9 @@ namespace Kot.MongoDB.Migrations
             _historyCollection = _db.GetCollection<MigrationHistory>(_options.MigrationsCollectionName);
         }
 
-        public async Task MigrateAsync(DatabaseVersion targetVersion = default)
+        public async Task MigrateAsync(DatabaseVersion targetVersion = default, CancellationToken cancellationToken = default)
         {
-            DatabaseVersion currentVersion = await GetCurrentDatabaseVersion(_historyCollection);
+            DatabaseVersion currentVersion = await GetCurrentDatabaseVersion(_historyCollection, cancellationToken);
             IEnumerable<IMongoMigration> migrations = _migrationsLocator.Locate();
 
             if (targetVersion != default && currentVersion == targetVersion)
@@ -42,20 +43,21 @@ namespace Kot.MongoDB.Migrations
             switch (_options.TransactionScope)
             {
                 case TransactionScope.AllMigrations:
-                    await ApplyAllMigrationsInOneTransaction(applicableMigrations, isUpgrade);
+                    await ApplyAllMigrationsInOneTransaction(applicableMigrations, isUpgrade, cancellationToken);
                     break;
                 case TransactionScope.SingleMigration:
-                    await ApplyAllMigrationsInSeparateTransactions(applicableMigrations, isUpgrade);
+                    await ApplyAllMigrationsInSeparateTransactions(applicableMigrations, isUpgrade, cancellationToken);
                     break;
                 case TransactionScope.None:
-                    await ApplyAllMigrationsWithoutTransaction(applicableMigrations, isUpgrade);
+                    await ApplyAllMigrationsWithoutTransaction(applicableMigrations, isUpgrade, cancellationToken);
                     break;
             }
         }
 
-        private async Task ApplyAllMigrationsInOneTransaction(IEnumerable<IMongoMigration> migrations, bool isUpgrade)
+        private async Task ApplyAllMigrationsInOneTransaction(IEnumerable<IMongoMigration> migrations, bool isUpgrade,
+            CancellationToken cancellationToken)
         {
-            using (IClientSessionHandle session = await _mongoClient.StartSessionAsync())
+            using (IClientSessionHandle session = await _mongoClient.StartSessionAsync(null, cancellationToken))
             {
                 session.StartTransaction();
 
@@ -63,64 +65,67 @@ namespace Kot.MongoDB.Migrations
                 {
                     foreach (IMongoMigration migration in migrations)
                     {
-                        await ApplyMigration(session, migration, isUpgrade);
+                        await ApplyMigration(session, migration, isUpgrade, cancellationToken);
                     }
 
-                    await session.CommitTransactionAsync();
+                    await session.CommitTransactionAsync(cancellationToken);
                 }
                 catch
                 {
-                    await session.AbortTransactionAsync();
+                    await session.AbortTransactionAsync(cancellationToken);
                     throw;
                 }
             }
         }
 
-        private async Task ApplyAllMigrationsInSeparateTransactions(IEnumerable<IMongoMigration> migrations, bool isUpgrade)
+        private async Task ApplyAllMigrationsInSeparateTransactions(IEnumerable<IMongoMigration> migrations, bool isUpgrade,
+            CancellationToken cancellationToken)
         {
             foreach (IMongoMigration migration in migrations)
             {
-                using (IClientSessionHandle session = await _mongoClient.StartSessionAsync())
+                using (IClientSessionHandle session = await _mongoClient.StartSessionAsync(null, cancellationToken))
                 {
                     session.StartTransaction();
 
                     try
                     {
-                        await ApplyMigration(session, migration, isUpgrade);
-                        await session.CommitTransactionAsync();
+                        await ApplyMigration(session, migration, isUpgrade, cancellationToken);
+                        await session.CommitTransactionAsync(cancellationToken);
                     }
                     catch
                     {
-                        await session.AbortTransactionAsync();
+                        await session.AbortTransactionAsync(cancellationToken);
                         throw;
                     }
                 }
             }
         }
 
-        private async Task ApplyAllMigrationsWithoutTransaction(IEnumerable<IMongoMigration> migrations, bool isUpgrade)
+        private async Task ApplyAllMigrationsWithoutTransaction(IEnumerable<IMongoMigration> migrations, bool isUpgrade,
+            CancellationToken cancellationToken)
         {
             foreach (IMongoMigration migration in migrations)
             {
-                await ApplyMigration(null, migration, isUpgrade);
+                await ApplyMigration(null, migration, isUpgrade, cancellationToken);
             }
         }
 
-        private async Task ApplyMigration(IClientSessionHandle session, IMongoMigration migration, bool isUpgrade)
+        private async Task ApplyMigration(IClientSessionHandle session, IMongoMigration migration, bool isUpgrade,
+            CancellationToken cancellationToken)
         {
             if (isUpgrade)
             {
-                await ApplyMigrationUp(session, migration);
+                await ApplyMigrationUp(session, migration, cancellationToken);
             }
             else
             {
-                await ApplyMigrationDown(session, migration);
+                await ApplyMigrationDown(session, migration, cancellationToken);
             }
         }
 
-        private async Task ApplyMigrationUp(IClientSessionHandle session, IMongoMigration migration)
+        private async Task ApplyMigrationUp(IClientSessionHandle session, IMongoMigration migration, CancellationToken cancellationToken)
         {
-            await migration.UpAsync(_db, session);
+            await migration.UpAsync(_db, session, cancellationToken);
 
             var historyEntry = new MigrationHistory
             {
@@ -131,29 +136,30 @@ namespace Kot.MongoDB.Migrations
 
             if (session == null)
             {
-                await _historyCollection.InsertOneAsync(historyEntry);
+                await _historyCollection.InsertOneAsync(historyEntry, null, cancellationToken);
             }
             else
             {
-                await _historyCollection.InsertOneAsync(session, historyEntry);
+                await _historyCollection.InsertOneAsync(session, historyEntry, null, cancellationToken);
             }
         }
 
-        private async Task ApplyMigrationDown(IClientSessionHandle session, IMongoMigration migration)
+        private async Task ApplyMigrationDown(IClientSessionHandle session, IMongoMigration migration, CancellationToken cancellationToken)
         {
-            await migration.DownAsync(_db, session);
+            await migration.DownAsync(_db, session, cancellationToken);
 
             if (session == null)
             {
-                await _historyCollection.DeleteOneAsync(x => x.Version == migration.Version);
+                await _historyCollection.DeleteOneAsync(x => x.Version == migration.Version, cancellationToken);
             }
             else
             {
-                await _historyCollection.DeleteOneAsync(session, x => x.Version == migration.Version);
+                await _historyCollection.DeleteOneAsync(session, x => x.Version == migration.Version, null, cancellationToken);
             }
         }
 
-        private static async Task<DatabaseVersion> GetCurrentDatabaseVersion(IMongoCollection<MigrationHistory> historyCollection)
+        private static async Task<DatabaseVersion> GetCurrentDatabaseVersion(IMongoCollection<MigrationHistory> historyCollection,
+            CancellationToken cancellationToken)
         {
             var sort = Builders<MigrationHistory>.Sort
                 .Descending($"{nameof(MigrationHistory.Version)}.{nameof(DatabaseVersion.Major)}")
@@ -163,7 +169,7 @@ namespace Kot.MongoDB.Migrations
             MigrationHistory lastMigration = await historyCollection
                 .Find(FilterDefinition<MigrationHistory>.Empty)
                 .Sort(sort)
-                .FirstOrDefaultAsync();
+                .FirstOrDefaultAsync(cancellationToken);
 
             return lastMigration?.Version ?? default;
         }

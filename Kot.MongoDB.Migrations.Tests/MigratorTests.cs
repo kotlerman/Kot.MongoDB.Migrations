@@ -9,6 +9,7 @@ using NUnit.Framework;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace Kot.MongoDB.Migrations.Tests
@@ -313,32 +314,32 @@ namespace Kot.MongoDB.Migrations.Tests
             {
             }
 
-            public override async Task UpAsync(IMongoDatabase db, IClientSessionHandle session)
+            public override async Task UpAsync(IMongoDatabase db, IClientSessionHandle session, CancellationToken cancellationToken)
             {
                 IMongoCollection<TestDoc> collection = db.GetCollection<TestDoc>(DocCollectionName);
                 var doc = new TestDoc { Version = Version.ToString() };
 
                 if (session == null)
                 {
-                    await collection.InsertOneAsync(doc);
+                    await collection.InsertOneAsync(doc, null, cancellationToken);
                 }
                 else
                 {
-                    await collection.InsertOneAsync(session, doc);
+                    await collection.InsertOneAsync(session, doc, null, cancellationToken);
                 }
             }
 
-            public override async Task DownAsync(IMongoDatabase db, IClientSessionHandle session)
+            public override async Task DownAsync(IMongoDatabase db, IClientSessionHandle session, CancellationToken cancellationToken)
             {
                 IMongoCollection<TestDoc> collection = db.GetCollection<TestDoc>(DocCollectionName);
 
                 if (session == null)
                 {
-                    var res = await collection.DeleteOneAsync(x => x.Version == Version.ToString());
+                    var res = await collection.DeleteOneAsync(x => x.Version == Version.ToString(), null, cancellationToken);
                 }
                 else
                 {
-                    var res = await collection.DeleteOneAsync(session, x => x.Version == Version.ToString());
+                    var res = await collection.DeleteOneAsync(session, x => x.Version == Version.ToString(), null, cancellationToken);
                 }
             }
         }
@@ -351,12 +352,12 @@ namespace Kot.MongoDB.Migrations.Tests
             {
             }
 
-            public override Task UpAsync(IMongoDatabase db, IClientSessionHandle session)
+            public override Task UpAsync(IMongoDatabase db, IClientSessionHandle session, CancellationToken cancellationToken)
             {
                 throw new Exception();
             }
 
-            public override Task DownAsync(IMongoDatabase db, IClientSessionHandle session)
+            public override Task DownAsync(IMongoDatabase db, IClientSessionHandle session, CancellationToken cancellationToken)
             {
                 throw new Exception();
             }
