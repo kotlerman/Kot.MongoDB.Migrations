@@ -15,8 +15,15 @@ namespace Kot.MongoDB.Migrations.Tests
     public class MigrationsLocatorTests
     {
         private const string TestMigrationTypePrefix = "MigrationsLocatorTest_MongoMigration";
-        private readonly MigrationsLocator _locator = new();
         private readonly string[] _migrationVersions = new[] { "123.456.1", "123.456.2", "123.456.3" };
+        private readonly ActivatorMigrationInstantiator _instantiator;
+        private readonly MigrationsLocator _locator;
+
+        public MigrationsLocatorTests()
+        {
+            _instantiator = new ActivatorMigrationInstantiator();
+            _locator = new MigrationsLocator(_instantiator);
+        }
 
         [Test, Order(1)]
         public void Success()

@@ -3,16 +3,16 @@ using System;
 
 namespace Kot.MongoDB.Migrations.DI
 {
-    public class DIMigrationsLocator : MigrationsLocator
+    public class DIMigrationInstantiator : IMigrationInstantiator
     {
         private readonly IServiceProvider _serviceProvider;
 
-        public DIMigrationsLocator(IServiceProvider serviceProvider)
+        public DIMigrationInstantiator(IServiceProvider serviceProvider)
         {
             _serviceProvider = serviceProvider;
         }
 
-        protected override IMongoMigration Instantiate(Type migrationType)
+        public IMongoMigration Instantiate(Type migrationType)
             => (IMongoMigration)ActivatorUtilities.CreateInstance(_serviceProvider, migrationType);
     }
 }

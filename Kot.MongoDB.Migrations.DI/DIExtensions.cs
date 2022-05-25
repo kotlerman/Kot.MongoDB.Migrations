@@ -8,7 +8,8 @@ namespace Kot.MongoDB.Migrations.DI
         public static IServiceCollection AddMongoMigrations(this IServiceCollection serviceCollection, MigrationOptions options)
         {
             serviceCollection.AddSingleton(options);
-            serviceCollection.AddSingleton<IMigrationsLocator, DIMigrationsLocator>();
+            serviceCollection.AddSingleton<IMigrationInstantiator, DIMigrationInstantiator>();
+            serviceCollection.AddSingleton<IMigrationsLocator, MigrationsLocator>();
             serviceCollection.AddSingleton<IMigrator, Migrator>();
             return serviceCollection;
         }
@@ -17,7 +18,8 @@ namespace Kot.MongoDB.Migrations.DI
             MigrationOptions options)
         {
             serviceCollection.AddSingleton(options);
-            serviceCollection.AddSingleton<IMigrationsLocator, DIMigrationsLocator>();
+            serviceCollection.AddSingleton<IMigrationInstantiator, DIMigrationInstantiator>();
+            serviceCollection.AddSingleton<IMigrationsLocator, MigrationsLocator>();
             serviceCollection.AddSingleton<IMigrator>(provider => new Migrator(
                 provider.GetRequiredService<IMigrationsLocator>(), mongoClient, provider.GetRequiredService<MigrationOptions>()));
             return serviceCollection;

@@ -9,12 +9,19 @@ namespace Kot.MongoDB.Migrations
     {
         private static readonly Type MigrationType = typeof(IMongoMigration);
 
+        private readonly IMigrationInstantiator _instantiator;
+
+        public MigrationsLocator(IMigrationInstantiator instantiator)
+        {
+            _instantiator = instantiator;
+        }
+
         public IEnumerable<IMongoMigration> Locate()
         {
             IEnumerable<IMongoMigration> migrations = AppDomain.CurrentDomain.GetAssemblies()
                 .SelectMany(assembly => assembly.GetTypes())
                 .Where(type => MigrationType.IsAssignableFrom(type) && !type.IsAbstract)
-                .Select(type => Instantiate(type))
+                .Select(type => _instantiator.Instantiate(type))
                 .OrderBy(migration => migration.Version)
                 .ToList();
 
@@ -22,8 +29,6 @@ namespace Kot.MongoDB.Migrations
 
             return migrations;
         }
-
-        protected virtual IMongoMigration Instantiate(Type migrationType) => (IMongoMigration)Activator.CreateInstance(migrationType);
 
         private static void EnsureNoDuplicateVersions(IEnumerable<IMongoMigration> migrations)
         {
