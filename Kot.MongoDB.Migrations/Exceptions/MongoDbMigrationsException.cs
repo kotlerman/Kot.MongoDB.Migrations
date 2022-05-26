@@ -7,5 +7,9 @@ namespace Kot.MongoDB.Migrations.Exceptions
         public MongoDbMigrationsException(string message) : base(message)
         {
         }
+
+        public MongoDbMigrationsException(string message, Exception innerException) : base(message, innerException)
+        {
+        }
     }
 }

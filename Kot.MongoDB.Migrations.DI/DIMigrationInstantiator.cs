@@ -1,4 +1,5 @@
-﻿using Microsoft.Extensions.DependencyInjection;
+﻿using Kot.MongoDB.Migrations.Exceptions;
+using Microsoft.Extensions.DependencyInjection;
 using System;
 
 namespace Kot.MongoDB.Migrations.DI
@@ -13,6 +14,15 @@ namespace Kot.MongoDB.Migrations.DI
         }
 
         public IMongoMigration Instantiate(Type migrationType)
-            => (IMongoMigration)ActivatorUtilities.CreateInstance(_serviceProvider, migrationType);
+        {
+            try
+            {
+                return (IMongoMigration)ActivatorUtilities.CreateInstance(_serviceProvider, migrationType);
+            }
+            catch (Exception ex)
+            {
+                throw new MigrationInstantiationException(migrationType, ex);
+            }
+        }
     }
 }
