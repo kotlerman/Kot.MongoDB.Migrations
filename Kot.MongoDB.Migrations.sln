@@ -7,9 +7,11 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Kot.MongoDB.Migrations", "K
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Kot.MongoDB.Migrations.Tests", "Kot.MongoDB.Migrations.Tests\Kot.MongoDB.Migrations.Tests.csproj", "{CE4AF6AA-BC3C-44FC-8187-B0107D2572C4}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Kot.MongoDB.Migrations.DI", "Kot.MongoDB.Migrations.DI\Kot.MongoDB.Migrations.DI.csproj", "{04216B23-1507-4206-8099-98F9521185AD}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Kot.MongoDB.Migrations.DI", "Kot.MongoDB.Migrations.DI\Kot.MongoDB.Migrations.DI.csproj", "{04216B23-1507-4206-8099-98F9521185AD}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Kot.MongoDB.Migrations.DI.Tests", "Kot.MongoDB.Migrations.DI.Tests\Kot.MongoDB.Migrations.DI.Tests.csproj", "{6F4C85CB-1663-4AA3-97F5-9E85AF23DF5A}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Kot.MongoDB.Migrations.DI.Tests", "Kot.MongoDB.Migrations.DI.Tests\Kot.MongoDB.Migrations.DI.Tests.csproj", "{6F4C85CB-1663-4AA3-97F5-9E85AF23DF5A}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Kot.MongoDB.Migrations.MigrationsLocatorTests", "Kot.MongoDB.Migrations.MigrationsLocatorTests\Kot.MongoDB.Migrations.MigrationsLocatorTests.csproj", "{3B12EA11-C6C5-4593-B1A9-ADDDBE8A1655}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -33,6 +35,10 @@ Global
 		{6F4C85CB-1663-4AA3-97F5-9E85AF23DF5A}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{6F4C85CB-1663-4AA3-97F5-9E85AF23DF5A}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{6F4C85CB-1663-4AA3-97F5-9E85AF23DF5A}.Release|Any CPU.Build.0 = Release|Any CPU
+		{3B12EA11-C6C5-4593-B1A9-ADDDBE8A1655}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{3B12EA11-C6C5-4593-B1A9-ADDDBE8A1655}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{3B12EA11-C6C5-4593-B1A9-ADDDBE8A1655}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{3B12EA11-C6C5-4593-B1A9-ADDDBE8A1655}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
