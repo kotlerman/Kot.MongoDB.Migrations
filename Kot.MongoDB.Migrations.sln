@@ -11,11 +11,13 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Kot.MongoDB.Migrations.DI",
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Kot.MongoDB.Migrations.DI.Tests", "Kot.MongoDB.Migrations.DI.Tests\Kot.MongoDB.Migrations.DI.Tests.csproj", "{6F4C85CB-1663-4AA3-97F5-9E85AF23DF5A}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Kot.MongoDB.Migrations.MigrationsLocatorTests", "Kot.MongoDB.Migrations.MigrationsLocatorTests\Kot.MongoDB.Migrations.MigrationsLocatorTests.csproj", "{3B12EA11-C6C5-4593-B1A9-ADDDBE8A1655}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Kot.MongoDB.Migrations.MigrationsLocatorTests", "Kot.MongoDB.Migrations.MigrationsLocatorTests\Kot.MongoDB.Migrations.MigrationsLocatorTests.csproj", "{3B12EA11-C6C5-4593-B1A9-ADDDBE8A1655}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Tests", "Tests", "{C11C433E-4867-4027-B562-45FD05040E6E}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Kot.MongoDB.Migrations.DI.IntegrationTests", "Kot.MongoDB.Migrations.DI.IntegrationTests\Kot.MongoDB.Migrations.DI.IntegrationTests.csproj", "{C36B017D-FCE3-4739-A773-177F01577906}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Kot.MongoDB.Migrations.DI.IntegrationTests", "Kot.MongoDB.Migrations.DI.IntegrationTests\Kot.MongoDB.Migrations.DI.IntegrationTests.csproj", "{C36B017D-FCE3-4739-A773-177F01577906}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Kot.MongoDB.Migrations.IntegrationTests", "Kot.MongoDB.Migrations.IntegrationTests\Kot.MongoDB.Migrations.IntegrationTests.csproj", "{A8CDF8AB-090D-4DC0-9C54-BE57B7365736}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -47,6 +49,10 @@ Global
 		{C36B017D-FCE3-4739-A773-177F01577906}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{C36B017D-FCE3-4739-A773-177F01577906}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{C36B017D-FCE3-4739-A773-177F01577906}.Release|Any CPU.Build.0 = Release|Any CPU
+		{A8CDF8AB-090D-4DC0-9C54-BE57B7365736}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{A8CDF8AB-090D-4DC0-9C54-BE57B7365736}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{A8CDF8AB-090D-4DC0-9C54-BE57B7365736}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{A8CDF8AB-090D-4DC0-9C54-BE57B7365736}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -56,6 +62,7 @@ Global
 		{6F4C85CB-1663-4AA3-97F5-9E85AF23DF5A} = {C11C433E-4867-4027-B562-45FD05040E6E}
 		{3B12EA11-C6C5-4593-B1A9-ADDDBE8A1655} = {C11C433E-4867-4027-B562-45FD05040E6E}
 		{C36B017D-FCE3-4739-A773-177F01577906} = {C11C433E-4867-4027-B562-45FD05040E6E}
+		{A8CDF8AB-090D-4DC0-9C54-BE57B7365736} = {C11C433E-4867-4027-B562-45FD05040E6E}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {375B4F28-50BB-47F7-BE38-78E9095EDD29}
