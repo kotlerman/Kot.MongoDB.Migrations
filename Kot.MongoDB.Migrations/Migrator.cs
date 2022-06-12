@@ -57,7 +57,7 @@ namespace Kot.MongoDB.Migrations
         private async Task ApplyAllMigrationsInOneTransaction(IEnumerable<IMongoMigration> migrations, bool isUpgrade,
             CancellationToken cancellationToken)
         {
-            using (IClientSessionHandle session = await _mongoClient.StartSessionAsync(null, cancellationToken))
+            using (IClientSessionHandle session = await _mongoClient.StartSessionAsync(_options.ClientSessionOptions, cancellationToken))
             {
                 session.StartTransaction();
 
@@ -83,7 +83,7 @@ namespace Kot.MongoDB.Migrations
         {
             foreach (IMongoMigration migration in migrations)
             {
-                using (IClientSessionHandle session = await _mongoClient.StartSessionAsync(null, cancellationToken))
+                using (IClientSessionHandle session = await _mongoClient.StartSessionAsync(_options.ClientSessionOptions, cancellationToken))
                 {
                     session.StartTransaction();
 

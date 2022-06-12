@@ -1,4 +1,5 @@
-﻿using System;
+﻿using MongoDB.Driver;
+using System;
 
 namespace Kot.MongoDB.Migrations
 {
@@ -25,6 +26,7 @@ namespace Kot.MongoDB.Migrations
 
         public TransactionScope TransactionScope { get; set; } = TransactionScope.None;
 
+        public ClientSessionOptions ClientSessionOptions { get; set; }
 
         public MigrationOptions(string databaseName)
         {
