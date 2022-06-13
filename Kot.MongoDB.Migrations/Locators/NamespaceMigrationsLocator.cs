@@ -5,7 +5,7 @@ using System.Text;
 
 namespace Kot.MongoDB.Migrations.Locators
 {
-    public class NamespaceMigrationsLocator
+    public class NamespaceMigrationsLocator : IMigrationsLocator
     {
         private static readonly Type MigrationType = typeof(IMongoMigration);
 
