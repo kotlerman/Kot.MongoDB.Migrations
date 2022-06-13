@@ -1,4 +1,5 @@
 ﻿using Kot.MongoDB.Migrations.Exceptions;
+using Kot.MongoDB.Migrations.Locators;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using MongoDB.Driver;
@@ -9,59 +10,59 @@ using System.IO;
 using System.Linq;
 using System.Reflection;
 
-namespace Kot.MongoDB.Migrations.Tests
+namespace Kot.MongoDB.Migrations.MigrationsLocatorTests
 {
-    [TestFixture]
-    public class MigrationsLocatorTests
+    [TestFixture, Order(1)]
+    public class FailureMigrationsLocatorTests
     {
-        private const string TestMigrationTypePrefix = "MigrationsLocatorTest_MongoMigration";
-        private readonly string[] _migrationVersions = new[] { "123.456.1", "123.456.2", "123.456.3" };
-        private readonly ActivatorMigrationInstantiator _instantiator;
-        private readonly MigrationsLocator _locator;
+        private const string MigrationsNamespace = "Kot.MongoDB.Migrations.MigrationsLocatorTests.Migrations.Duplicates";
+        private static Assembly CreatedAssembly;
 
-        public MigrationsLocatorTests()
+        [OneTimeSetUp]
+        public void Setup()
         {
-            _instantiator = new ActivatorMigrationInstantiator();
-            _locator = new MigrationsLocator(_instantiator);
-        }
-
-        [Test, Order(1)]
-        public void Success()
-        {
-            // Arrange
-            string[] migrationCodes = _migrationVersions.Select(GenerateMigrationCode).ToArray();
-            CompileAndLoadAssemblyWithMigrations("migrationsA", migrationCodes);
-
-            // Act
-            IMongoMigration[] migrations = _locator.Locate()
-                .Where(x => x.GetType().Name.StartsWith(TestMigrationTypePrefix))
-                .ToArray();
-
-            // Assert
-            Assert.AreEqual(_migrationVersions.Length, migrations.Length);
-
-            for (int i = 0; i < _migrationVersions.Length; i++)
-            {
-                Assert.AreEqual(_migrationVersions[i], migrations[i].Version.ToString());
-            }
-        }
-
-        [Test, Order(2)]
-        public void Failure_DuplicateMigrationVersion()
-        {
-            // Arrange
             string[] migrationCodes = new[]
             {
-                GenerateMigrationCode(_migrationVersions[0]),
+                GenerateMigrationCode("2.0.5"),
+                GenerateMigrationCode("2.0.5")
             };
-
-            CompileAndLoadAssemblyWithMigrations("migrationsB", migrationCodes);
-
-            // Act & Assert
-            Assert.Throws<DuplicateMigrationVersionException>(() => _locator.Locate());
+            CreatedAssembly = CompileAndLoadAssemblyWithMigrations("migrationsA", migrationCodes);
         }
 
-        private static void CompileAndLoadAssemblyWithMigrations(string name, IEnumerable<string> migrationCodes)
+        [Test]
+        public void CurrentDomainMigrationsLocator_DuplicateMigrationVersion()
+        {
+            // Arrange
+            var instantiator = new ActivatorMigrationInstantiator();
+            var locator = new CurrentDomainMigrationsLocator(instantiator);
+
+            // Act & Assert
+            Assert.Throws<DuplicateMigrationVersionException>(() => locator.Locate());
+        }
+
+        [Test]
+        public void AssemblyMigrationsLocator_DuplicateMigrationVersion()
+        {
+            // Arrange
+            var instantiator = new ActivatorMigrationInstantiator();
+            var locator = new AssemblyMigrationsLocator(instantiator, CreatedAssembly);
+
+            // Act & Assert
+            Assert.Throws<DuplicateMigrationVersionException>(() => locator.Locate());
+        }
+
+        [Test]
+        public void NamespaceMigrationsLocator_DuplicateMigrationVersion()
+        {
+            // Arrange
+            var instantiator = new ActivatorMigrationInstantiator();
+            var locator = new NamespaceMigrationsLocator(instantiator, MigrationsNamespace);
+
+            // Act & Assert
+            Assert.Throws<DuplicateMigrationVersionException>(() => locator.Locate());
+        }
+
+        private static Assembly CompileAndLoadAssemblyWithMigrations(string name, IEnumerable<string> migrationCodes)
         {
             SyntaxTree[] syntaxTrees = migrationCodes.Select(code => CSharpSyntaxTree.ParseText(code)).ToArray();
             MetadataReference[] references = new[]
@@ -81,12 +82,12 @@ namespace Kot.MongoDB.Migrations.Tests
             using var memoryStream = new MemoryStream();
             compilation.Emit(memoryStream);
 
-            AppDomain.CurrentDomain.Load(memoryStream.ToArray());
+            return AppDomain.CurrentDomain.Load(memoryStream.ToArray());
         }
 
         private static string GenerateMigrationCode(string version)
         {
-            string className = TestMigrationTypePrefix + version.Replace(".", "_");
+            string className = "DuplicateMigration" + version.Replace(".", "_") + "_" + Random.Shared.Next();
 
             return @$"
                 using MongoDB.Driver;
@@ -94,7 +95,7 @@ namespace Kot.MongoDB.Migrations.Tests
                 using System.Threading.Tasks;
                 using Kot.MongoDB.Migrations;
 
-                namespace Test
+                namespace {MigrationsNamespace}
                 {{
                     public class {className} : MongoMigration
                     {{

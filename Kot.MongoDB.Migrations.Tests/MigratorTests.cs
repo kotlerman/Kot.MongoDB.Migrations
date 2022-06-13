@@ -1,4 +1,5 @@
 using FluentAssertions;
+using Kot.MongoDB.Migrations.Locators;
 using Kot.MongoDB.Migrations.Tests.Extensions;
 using Microsoft.Extensions.Logging;
 using Mongo2Go;

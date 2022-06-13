@@ -1,6 +1,6 @@
 ﻿using System.Collections.Generic;
 
-namespace Kot.MongoDB.Migrations
+namespace Kot.MongoDB.Migrations.Locators
 {
     public interface IMigrationsLocator
     {

@@ -1,4 +1,5 @@
-﻿using MongoDB.Driver;
+﻿using Kot.MongoDB.Migrations.Locators;
+using MongoDB.Driver;
 using System;
 using System.Collections.Generic;
 using System.Text;
@@ -10,7 +11,7 @@ namespace Kot.MongoDB.Migrations
         public static IMigrator Create(IMongoClient mongoClient, MigrationOptions options)
         {
             IMigrationInstantiator instantiator = new ActivatorMigrationInstantiator();
-            IMigrationsLocator locator = new MigrationsLocator(instantiator);
+            IMigrationsLocator locator = new CurrentDomainMigrationsLocator(instantiator);
             IMigrator migrator = new Migrator(locator, mongoClient, options);
             return migrator;
         }

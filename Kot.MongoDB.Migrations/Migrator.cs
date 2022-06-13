@@ -1,4 +1,5 @@
-﻿using MongoDB.Driver;
+﻿using Kot.MongoDB.Migrations.Locators;
+using MongoDB.Driver;
 using System;
 using System.Collections.Generic;
 using System.Linq;

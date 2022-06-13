@@ -1,4 +1,5 @@
-﻿using Microsoft.Extensions.DependencyInjection;
+﻿using Kot.MongoDB.Migrations.Locators;
+using Microsoft.Extensions.DependencyInjection;
 using MongoDB.Driver;
 
 namespace Kot.MongoDB.Migrations.DI
@@ -9,7 +10,7 @@ namespace Kot.MongoDB.Migrations.DI
         {
             serviceCollection.AddSingleton(options);
             serviceCollection.AddSingleton<IMigrationInstantiator, DIMigrationInstantiator>();
-            serviceCollection.AddSingleton<IMigrationsLocator, MigrationsLocator>();
+            serviceCollection.AddSingleton<IMigrationsLocator, CurrentDomainMigrationsLocator>();
             serviceCollection.AddSingleton<IMigrator, Migrator>();
             return serviceCollection;
         }
@@ -19,7 +20,7 @@ namespace Kot.MongoDB.Migrations.DI
         {
             serviceCollection.AddSingleton(options);
             serviceCollection.AddSingleton<IMigrationInstantiator, DIMigrationInstantiator>();
-            serviceCollection.AddSingleton<IMigrationsLocator, MigrationsLocator>();
+            serviceCollection.AddSingleton<IMigrationsLocator, CurrentDomainMigrationsLocator>();
             serviceCollection.AddSingleton<IMigrator>(provider => new Migrator(
                 provider.GetRequiredService<IMigrationsLocator>(), mongoClient, provider.GetRequiredService<MigrationOptions>()));
             return serviceCollection;
