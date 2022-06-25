@@ -34,6 +34,12 @@ namespace Kot.MongoDB.Migrations.IntegrationTests
         private IMongoCollection<TestDoc> _docCollection;
         private Assembly _externalMigrationsAssembly;
 
+        [OneTimeSetUp]
+        public void OneTimeSetUp()
+        {
+            _externalMigrationsAssembly = CompileAndLoadAssemblyWithMigration();
+        }
+
         [SetUp]
         public void SetUp()
         {
@@ -42,7 +48,6 @@ namespace Kot.MongoDB.Migrations.IntegrationTests
             _db = _client.GetDatabase(DatabaseName);
             _histCollection = _db.GetCollection<MigrationHistory>(MigrationsCollectionName);
             _docCollection = _db.GetCollection<TestDoc>(TestDoc.CollectionName);
-            _externalMigrationsAssembly = CompileAndLoadAssemblyWithMigration();
         }
 
         [TearDown]
@@ -59,7 +64,7 @@ namespace Kot.MongoDB.Migrations.IntegrationTests
                 .LoadMigrationsFromCurrentDomain()
                 .Build();
 
-            var expectedVersions = new[] { "0.0.1", "0.0.2", "0.0.3" };
+            var expectedVersions = new[] { "0.0.1", "0.0.2", "0.0.3", "0.0.4" };
 
             // Act & Assert
             await TestMigration(migrator, expectedVersions);
@@ -73,7 +78,7 @@ namespace Kot.MongoDB.Migrations.IntegrationTests
                 .LoadMigrationsFromCurrentDomain()
                 .Build();
 
-            var expectedVersions = new[] { "0.0.1", "0.0.2", "0.0.3" };
+            var expectedVersions = new[] { "0.0.1", "0.0.2", "0.0.3", "0.0.4" };
 
             // Act & Assert
             await TestMigration(migrator, expectedVersions);
