@@ -5,7 +5,7 @@ using System.Threading.Tasks;
 
 namespace Kot.MongoDB.Migrations.IntegrationTests.Migrations
 {
-    internal abstract class TestMigrationBase : MongoMigration
+    public abstract class TestMigrationBase : MongoMigration
     {
         public TestMigrationBase(string version) : base(version, version)
         {

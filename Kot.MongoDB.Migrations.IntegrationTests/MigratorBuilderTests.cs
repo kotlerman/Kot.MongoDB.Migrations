@@ -1,13 +1,17 @@
 ﻿using FluentAssertions;
 using Kot.MongoDB.Migrations.IntegrationTests.Migrations;
 using Kot.MongoDB.Migrations.IntegrationTests.Migrations.Subfolder;
+using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.CSharp;
 using Mongo2Go;
 using MongoDB.Driver;
 using Moq;
 using NUnit.Framework;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
+using System.Reflection;
 using System.Threading.Tasks;
 
 namespace Kot.MongoDB.Migrations.IntegrationTests
@@ -28,6 +32,7 @@ namespace Kot.MongoDB.Migrations.IntegrationTests
         private IMongoDatabase _db;
         private IMongoCollection<MigrationHistory> _histCollection;
         private IMongoCollection<TestDoc> _docCollection;
+        private Assembly _externalMigrationsAssembly;
 
         [SetUp]
         public void SetUp()
@@ -37,6 +42,7 @@ namespace Kot.MongoDB.Migrations.IntegrationTests
             _db = _client.GetDatabase(DatabaseName);
             _histCollection = _db.GetCollection<MigrationHistory>(MigrationsCollectionName);
             _docCollection = _db.GetCollection<TestDoc>(TestDoc.CollectionName);
+            _externalMigrationsAssembly = CompileAndLoadAssemblyWithMigration();
         }
 
         [TearDown]
@@ -96,6 +102,34 @@ namespace Kot.MongoDB.Migrations.IntegrationTests
                 .Build();
 
             var expectedVersions = Enumerable.Empty<string>();
+
+            // Act & Assert
+            await TestMigration(migrator, expectedVersions);
+        }
+
+        [Test]
+        public async Task FromMongoClient_FromAssembly()
+        {
+            // Arrange
+            IMigrator migrator = MigratorBuilder.FromMongoClient(_client, Options)
+                .LoadMigrationsFromAssembly(_externalMigrationsAssembly)
+                .Build();
+
+            var expectedVersions = new[] { "0.0.4" };
+
+            // Act & Assert
+            await TestMigration(migrator, expectedVersions);
+        }
+
+        [Test]
+        public async Task FromConnectionString_FromAssembly()
+        {
+            // Arrange
+            IMigrator migrator = MigratorBuilder.FromConnectionString(_runner.ConnectionString, Options)
+                .LoadMigrationsFromAssembly(_externalMigrationsAssembly)
+                .Build();
+
+            var expectedVersions = new[] { "0.0.4" };
 
             // Act & Assert
             await TestMigration(migrator, expectedVersions);
@@ -199,6 +233,44 @@ namespace Kot.MongoDB.Migrations.IntegrationTests
 
             actualHistoryDocs.Select(x => x.Version.ToString()).Should().BeEquivalentTo(expectedVersions);
             actualTestDocs.Select(x => x.Value.ToString()).Should().BeEquivalentTo(expectedVersions);
+        }
+
+        private static Assembly CompileAndLoadAssemblyWithMigration()
+        {
+            string code = @"
+                using Kot.MongoDB.Migrations.IntegrationTests.Migrations;
+
+                namespace Kot.MigrationsAssembly
+                {
+                    public class SimpleMigration004 : TestMigrationBase
+                    {
+                        public SimpleMigration004() : base(""0.0.4"")
+                        {
+                        }
+                    }
+                }
+            ";
+
+            SyntaxTree syntaxTree = CSharpSyntaxTree.ParseText(code);
+            MetadataReference[] references = new[]
+            {
+                MetadataReference.CreateFromFile(Assembly.Load("netstandard, Version=2.0.0.0").Location),
+                MetadataReference.CreateFromFile(Assembly.Load("System.Runtime, Version=6.0.0.0").Location),
+                MetadataReference.CreateFromFile(typeof(object).GetTypeInfo().Assembly.Location),
+                MetadataReference.CreateFromFile(typeof(MongoClient).GetTypeInfo().Assembly.Location),
+                MetadataReference.CreateFromFile(typeof(MongoMigration).GetTypeInfo().Assembly.Location),
+                MetadataReference.CreateFromFile(typeof(MigratorBuilderTests).GetTypeInfo().Assembly.Location)
+            };
+
+            CSharpCompilation compilation = CSharpCompilation.Create("Kot.MigrationsAssembly")
+                .WithOptions(new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary))
+                .AddReferences(references)
+                .AddSyntaxTrees(syntaxTree);
+
+            using var memoryStream = new MemoryStream();
+            compilation.Emit(memoryStream);
+
+            return AppDomain.CurrentDomain.Load(memoryStream.ToArray());
         }
 
         private static IEnumerable<TestCaseData> FromConnectionStringTests() => new[]
