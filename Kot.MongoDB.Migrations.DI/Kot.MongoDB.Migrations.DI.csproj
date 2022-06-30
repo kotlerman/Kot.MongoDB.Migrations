@@ -15,4 +15,8 @@
     <ProjectReference Include="..\Kot.MongoDB.Migrations\Kot.MongoDB.Migrations.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <InternalsVisibleTo Include="Kot.MongoDB.Migrations.DI.Tests" />
+  </ItemGroup>
+
 </Project>

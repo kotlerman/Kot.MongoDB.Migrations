@@ -1,35 +1,47 @@
 ﻿using Kot.MongoDB.Migrations.Locators;
 using Microsoft.Extensions.DependencyInjection;
 using MongoDB.Driver;
+using System;
 
 namespace Kot.MongoDB.Migrations.DI
 {
     public static class DIExtensions
     {
-        public static IServiceCollection AddMongoMigrations(this IServiceCollection serviceCollection, MigrationOptions options)
+        public static IServiceCollection AddMongoMigrations(this IServiceCollection services, MigrationOptions options,
+            Action<DIMigrationsLocationConfigurator> configure = null)
         {
-            serviceCollection.AddSingleton(options);
-            serviceCollection.AddSingleton<IMigrationInstantiator, DIMigrationInstantiator>();
-            serviceCollection.AddSingleton<IMigrationsLocator, CurrentDomainMigrationsLocator>();
-            serviceCollection.AddSingleton<IMigrator, Migrator>();
-            return serviceCollection;
+            ConfigureMigrationsLocation(services, configure);
+            services.AddSingleton(options);
+            services.AddSingleton<IMigrator, Migrator>();
+            return services;
         }
 
-        public static IServiceCollection AddMongoMigrations(this IServiceCollection serviceCollection, IMongoClient mongoClient,
-            MigrationOptions options)
+        public static IServiceCollection AddMongoMigrations(this IServiceCollection services, IMongoClient mongoClient,
+            MigrationOptions options, Action<DIMigrationsLocationConfigurator> configure = null)
         {
-            serviceCollection.AddSingleton(options);
-            serviceCollection.AddSingleton<IMigrationInstantiator, DIMigrationInstantiator>();
-            serviceCollection.AddSingleton<IMigrationsLocator, CurrentDomainMigrationsLocator>();
-            serviceCollection.AddSingleton<IMigrator>(provider => new Migrator(
+            ConfigureMigrationsLocation(services, configure);
+            services.AddSingleton(options);
+            services.AddSingleton<IMigrator>(provider => new Migrator(
                 provider.GetRequiredService<IMigrationsLocator>(), mongoClient, provider.GetRequiredService<MigrationOptions>()));
-            return serviceCollection;
+            return services;
         }
 
         public static IServiceCollection AddMongoMigrations(this IServiceCollection serviceCollection, string connectionString,
-            MigrationOptions options)
+            MigrationOptions options, Action<DIMigrationsLocationConfigurator> configure = null)
         {
-            return AddMongoMigrations(serviceCollection, new MongoClient(connectionString), options);
+            return AddMongoMigrations(serviceCollection, new MongoClient(connectionString), options, configure);
+        }
+
+        private static void ConfigureMigrationsLocation(IServiceCollection services, Action<DIMigrationsLocationConfigurator> configure)
+        {
+            var locationsConfigurator = new DIMigrationsLocationConfigurator(services);
+
+            configure?.Invoke(locationsConfigurator);
+
+            if (!locationsConfigurator.IsLocatorSelected)
+            {
+                locationsConfigurator.LoadMigrationsFromCurrentDomain();
+            }
         }
     }
 }

@@ -1,30 +1,43 @@
 using FluentAssertions;
+using Kot.MongoDB.Migrations.DI.IntegrationTests.Migrations;
+using Kot.MongoDB.Migrations.DI.IntegrationTests.Migrations.Subfolder;
+using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Mongo2Go;
-using MongoDB.Bson.Serialization.Attributes;
 using MongoDB.Driver;
 using NUnit.Framework;
 using System;
 using System.Collections.Generic;
+using System.IO;
+using System.Linq;
+using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace Kot.MongoDB.Migrations.DI.Tests
+namespace Kot.MongoDB.Migrations.DI.IntegrationTests
 {
     [TestFixture]
     public class IntegrationTests
     {
         private const string DatabaseName = "IntegrationTest";
         private const string MigrationsCollectionName = "MigrationHistory";
-        private const string DocCollectionName = "DocCollection";
-        private const string MigrationVersion = "1.0.0";
+        private const string SubfolderNamespace = "Kot.MongoDB.Migrations.DI.IntegrationTests.Migrations.Subfolder";
+        private const string ServiceTestValue = "TestValue";
 
+        private Assembly _externalMigrationsAssembly;
         private MongoDbRunner _runner;
         private IMongoClient _client;
         private IMongoDatabase _db;
         private IMongoCollection<MigrationHistory> _histCollection;
         private IMongoCollection<TestDoc> _docCollection;
+
+        [OneTimeSetUp]
+        public void OneTimeSetUp()
+        {
+            _externalMigrationsAssembly = CompileAndLoadAssemblyWithMigration();
+        }
 
         [SetUp]
         public void Setup()
@@ -33,7 +46,7 @@ namespace Kot.MongoDB.Migrations.DI.Tests
             _client = new MongoClient(_runner.ConnectionString);
             _db = _client.GetDatabase(DatabaseName);
             _histCollection = _db.GetCollection<MigrationHistory>(MigrationsCollectionName);
-            _docCollection = _db.GetCollection<TestDoc>(DocCollectionName);
+            _docCollection = _db.GetCollection<TestDoc>(TestDoc.CollectionName);
         }
 
         [TearDown]
@@ -43,44 +56,190 @@ namespace Kot.MongoDB.Migrations.DI.Tests
         }
 
         [Test]
-        public async Task Migrate_WithExternalClient()
+        public async Task Migrate_WithExternalClient_Default()
         {
-            await Migrate((services, options) =>
+            var expectedVersions = new[] { "0.0.1", "0.0.2", "0.0.3", "0.0.4" };
+            await MigrateWithExternalClient(null, expectedVersions);
+        }
+
+        [Test]
+        public async Task Migrate_WithExternalClient_FromCurrentDomain()
+        {
+            var expectedVersions = new[] { "0.0.1", "0.0.2", "0.0.3", "0.0.4" };
+            await MigrateWithExternalClient(config => config.LoadMigrationsFromCurrentDomain(), expectedVersions);
+        }
+
+        [Test]
+        public async Task Migrate_WithExternalClient_FromExecutingAssembly()
+        {
+            var expectedVersions = Enumerable.Empty<string>();
+            await MigrateWithExternalClient(config => config.LoadMigrationsFromExecutingAssembly(), expectedVersions);
+        }
+
+        [Test]
+        public async Task Migrate_WithExternalClient_FromAssembly()
+        {
+            var expectedVersions = new[] { "0.0.4" };
+            await MigrateWithExternalClient(config => config.LoadMigrationsFromAssembly(_externalMigrationsAssembly), expectedVersions);
+        }
+
+        [Test]
+        public async Task Migrate_WithExternalClient_FromNamespace()
+        {
+            var expectedVersions = new[] { "0.0.3" };
+            await MigrateWithExternalClient(config => config.LoadMigrationsFromNamespace(SubfolderNamespace), expectedVersions);
+        }
+
+        [Test]
+        public async Task Migrate_WithExternalClient_MigrationsCollection()
+        {
+            var testService = new TestService() { TestValue = ServiceTestValue };
+            var migrations = new IMongoMigration[]
+            {
+                new SimpleMigration001(testService),
+                new SimpleMigration003(testService)
+            };
+            var expectedVersions = new[] { "0.0.1", "0.0.3" };
+            await MigrateWithExternalClient(config => config.LoadMigrations(migrations), expectedVersions);
+        }
+
+        [Test]
+        public async Task Migrate_WithSpecificClient_Default()
+        {
+            var expectedVersions = new[] { "0.0.1", "0.0.2", "0.0.3", "0.0.4" };
+            await MigrateWithSpecificClient(null, expectedVersions);
+        }
+
+        [Test]
+        public async Task Migrate_WithSpecificClient_FromCurrentDomain()
+        {
+            var expectedVersions = new[] { "0.0.1", "0.0.2", "0.0.3", "0.0.4" };
+            await MigrateWithSpecificClient(config => config.LoadMigrationsFromCurrentDomain(), expectedVersions);
+        }
+
+        [Test]
+        public async Task Migrate_WithSpecificClient_FromExecutingAssembly()
+        {
+            var expectedVersions = Enumerable.Empty<string>();
+            await MigrateWithSpecificClient(config => config.LoadMigrationsFromExecutingAssembly(), expectedVersions);
+        }
+
+        [Test]
+        public async Task Migrate_WithSpecificClient_FromAssembly()
+        {
+            var expectedVersions = new[] { "0.0.4" };
+            await MigrateWithSpecificClient(config => config.LoadMigrationsFromAssembly(_externalMigrationsAssembly), expectedVersions);
+        }
+
+        [Test]
+        public async Task Migrate_WithSpecificClient_FromNamespace()
+        {
+            var expectedVersions = new[] { "0.0.3" };
+            await MigrateWithSpecificClient(config => config.LoadMigrationsFromNamespace(SubfolderNamespace), expectedVersions);
+        }
+
+        [Test]
+        public async Task Migrate_WithSpecificClient_MigrationsCollection()
+        {
+            var testService = new TestService() { TestValue = ServiceTestValue };
+            var migrations = new IMongoMigration[]
+            {
+                new SimpleMigration001(testService),
+                new SimpleMigration003(testService)
+            };
+            var expectedVersions = new[] { "0.0.1", "0.0.3" };
+            await MigrateWithSpecificClient(config => config.LoadMigrations(migrations), expectedVersions);
+        }
+
+        [Test]
+        public async Task Migrate_WithConnectionString_Default()
+        {
+            var expectedVersions = new[] { "0.0.1", "0.0.2", "0.0.3", "0.0.4" };
+            await MigrateWithConnectionString(null, expectedVersions);
+        }
+
+        [Test]
+        public async Task Migrate_WithConnectionString_FromCurrentDomain()
+        {
+            var expectedVersions = new[] { "0.0.1", "0.0.2", "0.0.3", "0.0.4" };
+            await MigrateWithConnectionString(config => config.LoadMigrationsFromCurrentDomain(), expectedVersions);
+        }
+
+        [Test]
+        public async Task Migrate_WithConnectionString_FromExecutingAssembly()
+        {
+            var expectedVersions = Enumerable.Empty<string>();
+            await MigrateWithConnectionString(config => config.LoadMigrationsFromExecutingAssembly(), expectedVersions);
+        }
+
+        [Test]
+        public async Task Migrate_WithConnectionString_FromAssembly()
+        {
+            var expectedVersions = new[] { "0.0.4" };
+            await MigrateWithConnectionString(config => config.LoadMigrationsFromAssembly(_externalMigrationsAssembly), expectedVersions);
+        }
+
+        [Test]
+        public async Task Migrate_WithConnectionString_FromNamespace()
+        {
+            var expectedVersions = new[] { "0.0.3" };
+            await MigrateWithConnectionString(config => config.LoadMigrationsFromNamespace(SubfolderNamespace), expectedVersions);
+        }
+
+        [Test]
+        public async Task Migrate_WithConnectionString_MigrationsCollection()
+        {
+            var testService = new TestService() { TestValue = ServiceTestValue };
+            var migrations = new IMongoMigration[]
+            {
+                new SimpleMigration001(testService),
+                new SimpleMigration003(testService)
+            };
+            var expectedVersions = new[] { "0.0.1", "0.0.3" };
+            await MigrateWithConnectionString(config => config.LoadMigrations(migrations), expectedVersions);
+        }
+
+        private async Task MigrateWithExternalClient(Action<DIMigrationsLocationConfigurator> configure,
+            IEnumerable<string> expectedVersions)
+        {
+            await TestMigration((services, options) =>
             {
                 services.AddSingleton(_client);
-                services.AddMongoMigrations(options);
-            });
+                services.AddMongoMigrations(options, configure);
+            },
+            expectedVersions);
         }
 
-        [Test]
-        public async Task Migrate_WithSpecificClient()
+        private async Task MigrateWithSpecificClient(Action<DIMigrationsLocationConfigurator> configure,
+            IEnumerable<string> expectedVersions)
         {
-            await Migrate((services, options) =>
+            await TestMigration((services, options) =>
             {
-                services.AddMongoMigrations(_client, options);
-            });
+                services.AddMongoMigrations(_client, options, configure);
+            },
+            expectedVersions);
         }
 
-        [Test]
-        public async Task Migrate_WithConnectionString()
+        private async Task MigrateWithConnectionString(Action<DIMigrationsLocationConfigurator> configure,
+            IEnumerable<string> expectedVersions)
         {
-            await Migrate((services, options) =>
+            await TestMigration((services, options) =>
             {
-                services.AddMongoMigrations(_runner.ConnectionString, options);
-            });
+                services.AddMongoMigrations(_runner.ConnectionString, options, configure);
+            },
+            expectedVersions);
         }
 
-        private async Task Migrate(Action<IServiceCollection, MigrationOptions> configureMigrations)
+        private async Task TestMigration(Action<IServiceCollection, MigrationOptions> configure, IEnumerable<string> expectedVersions)
         {
             // Arrange
-            var testValue = "TestValue";
-            var testService = new TestService { TestValue = testValue };
+            var testService = new TestService { TestValue = ServiceTestValue };
             var options = new MigrationOptions(DatabaseName) { MigrationsCollectionName = MigrationsCollectionName };
 
             var host = Host.CreateDefaultBuilder()
                 .ConfigureServices(services =>
                 {
-                    configureMigrations(services, options);
+                    configure(services, options);
                     services.AddSingleton<ITestService>(testService);
                     services.AddHostedService<HostedService>();
                 })
@@ -93,8 +252,48 @@ namespace Kot.MongoDB.Migrations.DI.Tests
             List<MigrationHistory> actualHistoryDocs = await _histCollection.Find(FilterDefinition<MigrationHistory>.Empty).ToListAsync();
             List<TestDoc> actualTestDocs = await _docCollection.Find(FilterDefinition<TestDoc>.Empty).ToListAsync();
 
-            actualHistoryDocs.Should().HaveCount(1).And.ContainSingle(x => x.Version == MigrationVersion);
-            actualTestDocs.Should().HaveCount(1).And.ContainSingle(x => x.Value == testValue);
+            actualHistoryDocs.Select(x => x.Version.ToString()).Should().BeEquivalentTo(expectedVersions);
+            actualTestDocs.Select(x => x.ValueA.ToString()).Should().BeEquivalentTo(expectedVersions);
+            actualTestDocs.Select(x => x.ValueB).Should().AllBe(ServiceTestValue);
+        }
+
+        private static Assembly CompileAndLoadAssemblyWithMigration()
+        {
+            string code = @"
+                using Kot.MongoDB.Migrations.DI.IntegrationTests;
+                using Kot.MongoDB.Migrations.DI.IntegrationTests.Migrations;
+
+                namespace Kot.MigrationsAssembly
+                {
+                    public class SimpleMigration004 : TestMigrationBase
+                    {
+                        public SimpleMigration004(ITestService testService) : base(""0.0.4"", testService)
+                        {
+                        }
+                    }
+                }
+            ";
+
+            SyntaxTree syntaxTree = CSharpSyntaxTree.ParseText(code);
+            MetadataReference[] references = new[]
+            {
+                MetadataReference.CreateFromFile(Assembly.Load("netstandard, Version=2.0.0.0").Location),
+                MetadataReference.CreateFromFile(Assembly.Load("System.Runtime, Version=6.0.0.0").Location),
+                MetadataReference.CreateFromFile(typeof(object).GetTypeInfo().Assembly.Location),
+                MetadataReference.CreateFromFile(typeof(MongoClient).GetTypeInfo().Assembly.Location),
+                MetadataReference.CreateFromFile(typeof(MongoMigration).GetTypeInfo().Assembly.Location),
+                MetadataReference.CreateFromFile(typeof(IntegrationTests).GetTypeInfo().Assembly.Location)
+            };
+
+            CSharpCompilation compilation = CSharpCompilation.Create("Kot.MigrationsAssembly")
+                .WithOptions(new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary))
+                .AddReferences(references)
+                .AddSyntaxTrees(syntaxTree);
+
+            using var memoryStream = new MemoryStream();
+            compilation.Emit(memoryStream);
+
+            return AppDomain.CurrentDomain.Load(memoryStream.ToArray());
         }
 
         class HostedService : IHostedService
@@ -115,41 +314,6 @@ namespace Kot.MongoDB.Migrations.DI.Tests
             }
 
             public Task StopAsync(CancellationToken cancellationToken) => Task.CompletedTask;
-        }
-
-        class TestMigration : MongoMigration
-        {
-            private readonly string _testValue;
-
-            public TestMigration(ITestService testService) : base(MigrationVersion, MigrationVersion)
-            {
-                _testValue = testService.TestValue;
-            }
-
-            public override async Task UpAsync(IMongoDatabase db, IClientSessionHandle session, CancellationToken cancellationToken)
-            {
-                var collection = db.GetCollection<TestDoc>(DocCollectionName);
-                await collection.InsertOneAsync(new TestDoc { Value = _testValue }, null, cancellationToken);
-            }
-
-            public override Task DownAsync(IMongoDatabase db, IClientSessionHandle session, CancellationToken cancellationToken)
-                => throw new NotImplementedException();
-        }
-
-        [BsonIgnoreExtraElements]
-        class TestDoc
-        {
-            public string Value { get; set; }
-        }
-
-        interface ITestService
-        {
-            string TestValue { get; set; }
-        }
-
-        class TestService : ITestService
-        {
-            public string TestValue { get; set; }
         }
     }
 }
