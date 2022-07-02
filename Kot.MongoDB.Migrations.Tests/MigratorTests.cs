@@ -292,6 +292,28 @@ namespace Kot.MongoDB.Migrations.Tests
                 .And.BeEquivalentTo(testDocs);
         }
 
+        [Test]
+        public void NullLocator_ThrowsException()
+        {
+            // Act && Assert
+            Assert.Throws<ArgumentNullException>(() => new Migrator(null, _client, new MigrationOptions(DatabaseName)));
+        }
+
+        [Test]
+        public void NullClient_ThrowsException()
+        {
+            // Act && Assert
+            Assert.Throws<ArgumentNullException>(
+                () => new Migrator(new Mock<IMigrationsLocator>().Object, null, new MigrationOptions(DatabaseName)));
+        }
+
+        [Test]
+        public void NullOptions_ThrowsException()
+        {
+            // Act && Assert
+            Assert.Throws<ArgumentNullException>(() => new Migrator(new Mock<IMigrationsLocator>().Object, _client, null));
+        }
+
         private Migrator SetupMigrator(IEnumerable<IMongoMigration> migrations, TransactionScope transactionScope)
         {
             var locatorMock = new Mock<IMigrationsLocator>();

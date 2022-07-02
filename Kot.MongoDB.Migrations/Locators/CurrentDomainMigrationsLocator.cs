@@ -13,7 +13,7 @@ namespace Kot.MongoDB.Migrations.Locators
 
         public CurrentDomainMigrationsLocator(IMigrationInstantiator instantiator)
         {
-            _instantiator = instantiator;
+            _instantiator = instantiator ?? throw new ArgumentNullException(nameof(instantiator));
         }
 
         public IEnumerable<IMongoMigration> Locate()

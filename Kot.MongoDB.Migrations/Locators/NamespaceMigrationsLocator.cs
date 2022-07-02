@@ -14,7 +14,7 @@ namespace Kot.MongoDB.Migrations.Locators
 
         public NamespaceMigrationsLocator(IMigrationInstantiator instantiator, string @namespace)
         {
-            _instantiator = instantiator;
+            _instantiator = instantiator ?? throw new ArgumentNullException(nameof(instantiator));
             _namespace = string.IsNullOrEmpty(@namespace) ? throw new ArgumentNullException(nameof(@namespace)) : @namespace;
         }
 

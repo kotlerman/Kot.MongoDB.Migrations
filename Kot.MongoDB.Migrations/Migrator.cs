@@ -18,9 +18,9 @@ namespace Kot.MongoDB.Migrations
 
         public Migrator(IMigrationsLocator locator, IMongoClient mongoClient, MigrationOptions options)
         {
-            _migrationsLocator = locator;
-            _mongoClient = mongoClient;
-            _options = options;
+            _migrationsLocator = locator ?? throw new ArgumentNullException(nameof(locator));
+            _mongoClient = mongoClient ?? throw new ArgumentNullException(nameof(mongoClient));
+            _options = options ?? throw new ArgumentNullException(nameof(options));
             _db = _mongoClient.GetDatabase(_options.DatabaseName);
             _historyCollection = _db.GetCollection<MigrationHistory>(_options.MigrationsCollectionName);
         }

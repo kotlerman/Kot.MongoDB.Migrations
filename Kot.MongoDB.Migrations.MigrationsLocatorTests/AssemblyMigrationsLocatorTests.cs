@@ -1,6 +1,7 @@
 ﻿using FluentAssertions;
 using Kot.MongoDB.Migrations.Locators;
 using NUnit.Framework;
+using System;
 using System.Linq;
 using System.Reflection;
 
@@ -28,6 +29,21 @@ namespace Kot.MongoDB.Migrations.MigrationsLocatorTests
             {
                 Assert.AreEqual(_migrationVersions[i], migrations[i].Version.ToString());
             }
+        }
+
+        [Test]
+        public void NullInstantiator_ThrowsException()
+        {
+            // Act && Assert
+            Assert.Throws<ArgumentNullException>(() => new AssemblyMigrationsLocator(null, Assembly.GetExecutingAssembly()));
+        }
+
+        [Test]
+        public void NullAssembly_ThrowsException()
+        {
+            // Act && Assert
+            var instantiator = new ActivatorMigrationInstantiator();
+            Assert.Throws<ArgumentNullException>(() => new AssemblyMigrationsLocator(instantiator, null));
         }
     }
 }

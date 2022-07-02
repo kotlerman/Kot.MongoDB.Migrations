@@ -3,6 +3,7 @@ using Kot.MongoDB.Migrations.Exceptions;
 using Kot.MongoDB.Migrations.Locators;
 using Kot.MongoDB.Migrations.MigrationsLocatorTests.Migrations;
 using NUnit.Framework;
+using System;
 using System.Collections.Generic;
 
 namespace Kot.MongoDB.Migrations.MigrationsLocatorTests
@@ -29,7 +30,7 @@ namespace Kot.MongoDB.Migrations.MigrationsLocatorTests
         }
 
         [Test]
-        public void CollectionMigrationsLocator_DuplicateMigrationVersion()
+        public void DuplicateMigrationVersion_ThrowsException()
         {
             // Arrange
             var migrations = new MongoMigration[]
@@ -40,6 +41,13 @@ namespace Kot.MongoDB.Migrations.MigrationsLocatorTests
 
             // Assert
             Assert.Throws<DuplicateMigrationVersionException>(() => new CollectionMigrationsLocator(migrations));
+        }
+
+        [Test]
+        public void NullCollection_ThrowsException()
+        {
+            // Act && Assert
+            Assert.Throws<ArgumentNullException>(() => new CollectionMigrationsLocator(null));
         }
     }
 }

@@ -10,8 +10,8 @@ namespace Kot.MongoDB.Migrations.Locators
 
         public CollectionMigrationsLocator(IEnumerable<IMongoMigration> migrations)
         {
+            _migrations = migrations ?? throw new ArgumentNullException(nameof(migrations));
             DuplicateVersionChecker.EnsureNoDuplicateVersions(migrations);
-            _migrations = migrations;
         }
 
         public IEnumerable<IMongoMigration> Locate() => _migrations;

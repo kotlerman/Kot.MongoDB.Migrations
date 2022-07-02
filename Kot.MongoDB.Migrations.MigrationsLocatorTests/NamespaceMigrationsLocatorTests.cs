@@ -40,5 +40,12 @@ namespace Kot.MongoDB.Migrations.MigrationsLocatorTests
             // Act && Assert
             Assert.Throws<ArgumentNullException>(() => new NamespaceMigrationsLocator(instantiator, @namespace));
         }
+
+        [Test]
+        public void Failure_NullInstantiator()
+        {
+            // Act && Assert
+            Assert.Throws<ArgumentNullException>(() => new NamespaceMigrationsLocator(null, "Test"));
+        }
     }
 }

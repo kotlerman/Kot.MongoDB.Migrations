@@ -1,4 +1,5 @@
 ﻿using MongoDB.Driver;
+using System;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -13,7 +14,7 @@ namespace Kot.MongoDB.Migrations
         protected MongoMigration(DatabaseVersion version, string name)
         {
             Version = version;
-            Name = name;
+            Name = string.IsNullOrEmpty(name) ? throw new ArgumentNullException(nameof(name)) : name;
         }
 
         public abstract Task DownAsync(IMongoDatabase db, IClientSessionHandle session, CancellationToken cancellationToken);

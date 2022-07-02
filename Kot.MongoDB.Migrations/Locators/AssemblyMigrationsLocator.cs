@@ -15,8 +15,8 @@ namespace Kot.MongoDB.Migrations.Locators
 
         public AssemblyMigrationsLocator(IMigrationInstantiator instantiator, Assembly assembly)
         {
-            _instantiator = instantiator;
-            _assembly = assembly;
+            _instantiator = instantiator ?? throw new ArgumentNullException(nameof(instantiator));
+            _assembly = assembly ?? throw new ArgumentNullException(nameof(assembly));
         }
 
         public IEnumerable<IMongoMigration> Locate()
