@@ -5,8 +5,10 @@ namespace Kot.MongoDB.Migrations
 {
     public class MigrationOptions
     {
+        public static readonly string DefaultMigrationsCollectionName = "_migrations";
+
         private string _databaseName;
-        private string _migrationsCollectionName = "_migrations";
+        private string _migrationsCollectionName = DefaultMigrationsCollectionName;
 
         public string DatabaseName
         {
