@@ -3,6 +3,7 @@ using Kot.MongoDB.Migrations.IntegrationTests.Migrations;
 using Kot.MongoDB.Migrations.IntegrationTests.Migrations.Subfolder;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
+using Microsoft.Extensions.Logging;
 using Mongo2Go;
 using MongoDB.Driver;
 using Moq;
@@ -43,7 +44,11 @@ namespace Kot.MongoDB.Migrations.IntegrationTests
         [SetUp]
         public void SetUp()
         {
-            _runner = MongoDbRunner.Start(singleNodeReplSet: true);
+            ILogger logger = LoggerFactory
+                .Create(config => config.SetMinimumLevel(LogLevel.Error).AddConsole())
+                .CreateLogger("Mongo2Go");
+
+            _runner = MongoDbRunner.Start(singleNodeReplSet: true, logger: logger);
             _client = new MongoClient(_runner.ConnectionString);
             _db = _client.GetDatabase(DatabaseName);
             _histCollection = _db.GetCollection<MigrationHistory>(MigrationsCollectionName);
