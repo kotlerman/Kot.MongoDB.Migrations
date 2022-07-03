@@ -10,6 +10,10 @@ namespace Kot.MongoDB.Migrations
 {
     public class Migrator : IMigrator
     {
+        private static readonly string MajorFieldName = $"{nameof(MigrationHistory.Version)}.{nameof(DatabaseVersion.Major)}";
+        private static readonly string MinorFieldName = $"{nameof(MigrationHistory.Version)}.{nameof(DatabaseVersion.Minor)}";
+        private static readonly string PatchFieldName = $"{nameof(MigrationHistory.Version)}.{nameof(DatabaseVersion.Patch)}";
+
         private readonly IMigrationsLocator _migrationsLocator;
         private readonly IMongoClient _mongoClient;
         private readonly MigrationOptions _options;
@@ -27,6 +31,8 @@ namespace Kot.MongoDB.Migrations
 
         public async Task MigrateAsync(DatabaseVersion targetVersion = default, CancellationToken cancellationToken = default)
         {
+            await CreateIndex();
+
             DatabaseVersion currentVersion = await GetCurrentDatabaseVersion(_historyCollection, cancellationToken);
             IEnumerable<IMongoMigration> migrations = _migrationsLocator.Locate();
 
@@ -53,6 +59,19 @@ namespace Kot.MongoDB.Migrations
                     await ApplyAllMigrationsWithoutTransaction(applicableMigrations, isUpgrade, cancellationToken);
                     break;
             }
+        }
+
+        private async Task CreateIndex()
+        {
+            IndexKeysDefinition<MigrationHistory> indexDefinition = Builders<MigrationHistory>.IndexKeys
+                .Ascending(MajorFieldName)
+                .Ascending(MinorFieldName)
+                .Ascending(PatchFieldName);
+
+            CreateIndexModel<MigrationHistory> indexModel = new CreateIndexModel<MigrationHistory>(
+                indexDefinition, new CreateIndexOptions { Unique = true });
+
+            await _historyCollection.Indexes.CreateOneAsync(indexModel);
         }
 
         private async Task ApplyAllMigrationsInOneTransaction(IEnumerable<IMongoMigration> migrations, bool isUpgrade,
@@ -163,9 +182,9 @@ namespace Kot.MongoDB.Migrations
             CancellationToken cancellationToken)
         {
             var sort = Builders<MigrationHistory>.Sort
-                .Descending($"{nameof(MigrationHistory.Version)}.{nameof(DatabaseVersion.Major)}")
-                .Descending($"{nameof(MigrationHistory.Version)}.{nameof(DatabaseVersion.Minor)}")
-                .Descending($"{nameof(MigrationHistory.Version)}.{nameof(DatabaseVersion.Patch)}");
+                .Descending(MajorFieldName)
+                .Descending(MinorFieldName)
+                .Descending(PatchFieldName);
 
             MigrationHistory lastMigration = await historyCollection
                 .Find(FilterDefinition<MigrationHistory>.Empty)

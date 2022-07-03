@@ -3,6 +3,7 @@ using Kot.MongoDB.Migrations.Locators;
 using Kot.MongoDB.Migrations.Tests.Extensions;
 using Microsoft.Extensions.Logging;
 using Mongo2Go;
+using MongoDB.Bson;
 using MongoDB.Bson.Serialization.Attributes;
 using MongoDB.Driver;
 using Moq;
@@ -59,10 +60,10 @@ namespace Kot.MongoDB.Migrations.Tests
 
             // Assert
             var historyRecordsCount = await _histCollection.EstimatedDocumentCountAsync();
-            var hasCollections = await _db.ListCollections().AnyAsync();
+            var collectionNames = await _db.ListCollectionNames().ToListAsync();
 
             historyRecordsCount.Should().Be(0);
-            hasCollections.Should().Be(false);
+            collectionNames.Should().ContainSingle(x => x == MigrationsCollectionName);
         }
 
         [TestCase(TransactionScope.None, TestName = "ApplyUp_TransactionScopeNone")]
@@ -290,6 +291,28 @@ namespace Kot.MongoDB.Migrations.Tests
             actualTestDocs.Should()
                 .HaveCount(testDocs.Count)
                 .And.BeEquivalentTo(testDocs);
+        }
+
+        [Test]
+        public async Task IndexExists()
+        {
+            // Arrange
+            var migrator = SetupMigrator(Enumerable.Empty<IMongoMigration>(), TransactionScope.None);
+
+            // Act
+            await migrator.MigrateAsync();
+
+            // Assert
+            List<BsonDocument> indexes = await _histCollection.Indexes.List().ToListAsync();
+            BsonDocument versionIndexKey = indexes.Single(x => x["name"] != "_id_")["key"].AsBsonDocument;
+
+            const string majorKey = $"{nameof(MigrationHistory.Version)}.{nameof(MigrationHistory.Version.Major)}";
+            const string minorKey = $"{nameof(MigrationHistory.Version)}.{nameof(MigrationHistory.Version.Minor)}";
+            const string patchKey = $"{nameof(MigrationHistory.Version)}.{nameof(MigrationHistory.Version.Patch)}";
+
+            versionIndexKey[majorKey].Should().Be(1);
+            versionIndexKey[minorKey].Should().Be(1);
+            versionIndexKey[patchKey].Should().Be(1);
         }
 
         [Test]
