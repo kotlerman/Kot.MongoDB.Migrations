@@ -248,6 +248,7 @@ namespace Kot.MongoDB.Migrations.DI.IntegrationTests
                     services.AddSingleton<ITestService>(testService);
                     services.AddHostedService<HostedService>();
                 })
+                .ConfigureLogging(logging => logging.SetMinimumLevel(LogLevel.Warning))
                 .Build();
 
             // Act
