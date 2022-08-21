@@ -2,12 +2,34 @@
 
 namespace Kot.MongoDB.Migrations
 {
+    /// <summary>
+    /// Represents a database version.
+    /// </summary>
     public struct DatabaseVersion : IEquatable<DatabaseVersion>, IComparable<DatabaseVersion>, IComparable
     {
+        /// <summary>
+        /// Major version.
+        /// </summary>
         public int Major { get; }
+
+        /// <summary>
+        /// Minor version.
+        /// </summary>
         public int Minor { get; }
+
+        /// <summary>
+        /// Patch version.
+        /// </summary>
         public int Patch { get; }
 
+        /// <summary>
+        /// Instantiates a new instance of <see cref="DatabaseVersion"/>.
+        /// </summary>
+        /// <param name="major">Major version.</param>
+        /// <param name="minor">Minor version.</param>
+        /// <param name="patch">Patch version.</param>
+        /// <exception cref="ArgumentOutOfRangeException"><paramref name="major"/>, <paramref name="minor"/> or
+        /// <paramref name="patch"/> is less than zero.</exception>
         public DatabaseVersion(int major, int minor, int patch)
         {
             EnsureVersionNonNegative(major, minor, patch);
@@ -16,6 +38,13 @@ namespace Kot.MongoDB.Migrations
             Patch = patch;
         }
 
+        /// <summary>
+        /// Instantiates a new instance of <see cref="DatabaseVersion"/>.
+        /// </summary>
+        /// <param name="version">String representation of a version in the following format: "[Major].[Minor].[Patch]".</param>
+        /// <exception cref="ArgumentNullException"><paramref name="version"/> is <see langword="null"/> or empty.</exception>
+        /// <exception cref="FormatException"><paramref name="version"/> is in invalid format.</exception>
+        /// <exception cref="ArgumentOutOfRangeException">Major, minor or patch is less than zero.</exception>
         public DatabaseVersion(string version)
         {
             if (string.IsNullOrEmpty(version))
@@ -36,14 +65,32 @@ namespace Kot.MongoDB.Migrations
             EnsureVersionNonNegative(Major, Minor, Patch);
         }
 
+        /// <summary>
+        /// Returns the string representation of the database version.
+        /// </summary>
+        /// <returns>String representation of the database version.</returns>
         public override string ToString() => $"{Major}.{Minor}.{Patch}";
 
+        /// <summary>
+        /// Indicates whether the current version equals to another version.
+        /// </summary>
+        /// <param name="other"></param>
+        /// <returns><see langword="true"/> if the current version is equal to the <paramref name="other"/> parameter;
+        /// otherwise, <see langword="false"/>.</returns>
         public bool Equals(DatabaseVersion other) => (Major == other.Major) && (Minor == other.Minor) && (Patch == other.Patch);
 
+        /// <inheritdoc/>
         public override bool Equals(object obj) => obj is DatabaseVersion version && Equals(version);
 
+        /// <inheritdoc/>
         public override int GetHashCode() => (Major, Minor, Patch).GetHashCode();
 
+        /// <summary>
+        /// Compares the current version with another version and returns an integer that indicates whether the current version precedes,
+        /// follows, or occurs in the same position in the sort order as the other version.
+        /// </summary>
+        /// <param name="other">A version to compare with this version.</param>
+        /// <returns>A value that indicates the relative order of the versions being compared.</returns>
         public int CompareTo(DatabaseVersion other)
         {
             int majorDiff = Major - other.Major;
@@ -63,20 +110,72 @@ namespace Kot.MongoDB.Migrations
             return Patch - other.Patch;
         }
 
+        /// <summary>
+        /// Compares the current version with another version and returns an integer that indicates whether the current version precedes,
+        /// follows, or occurs in the same position in the sort order as the other version.
+        /// </summary>
+        /// <param name="obj">A version to compare with this version.</param>
+        /// <returns>A value that indicates the relative order of the versions being compared.</returns>
         public int CompareTo(object obj) => CompareTo((DatabaseVersion)obj);
 
+        /// <summary>
+        /// Determines whether two specified versions have the same value.
+        /// </summary>
+        /// <param name="left">The first version to compare.</param>
+        /// <param name="right">The second version to compare.</param>
+        /// <returns><see langword="true"/> if the value of <paramref name="left"/> is the same
+        /// as the value of <paramref name="right"/>; otherwise, <see langword="false"/>.</returns>
         public static bool operator ==(DatabaseVersion left, DatabaseVersion right) => left.Equals(right);
 
+        /// <summary>
+        /// Determines whether two specified versions have different values.
+        /// </summary>
+        /// <param name="left">The first version to compare.</param>
+        /// <param name="right">The second version to compare.</param>
+        /// <returns><see langword="true"/> if the value of <paramref name="left"/> is different
+        /// from the value of <paramref name="right"/>; otherwise, <see langword="false"/>.</returns>
         public static bool operator !=(DatabaseVersion left, DatabaseVersion right) => !(left == right);
 
+        /// <summary>
+        /// Determines whether one version is greater than the other.
+        /// </summary>
+        /// <param name="left">The first version to compare.</param>
+        /// <param name="right">The second version to compare.</param>
+        /// <returns><see langword="true"/> if the value of <paramref name="left"/> is greater
+        /// than the value of <paramref name="right"/>; otherwise, <see langword="false"/>.</returns>
         public static bool operator >(DatabaseVersion left, DatabaseVersion right) => left.CompareTo(right) > 0;
 
+        /// <summary>
+        /// Determines whether one version is less than the other.
+        /// </summary>
+        /// <param name="left">The first version to compare.</param>
+        /// <param name="right">The second version to compare.</param>
+        /// <returns><see langword="true"/> if the value of <paramref name="left"/> is less
+        /// than the value of <paramref name="right"/>; otherwise, <see langword="false"/>.</returns>
         public static bool operator <(DatabaseVersion left, DatabaseVersion right) => left.CompareTo(right) < 0;
 
+        /// <summary>
+        /// Determines whether one version is greater or equal to the other.
+        /// </summary>
+        /// <param name="left">The first version to compare.</param>
+        /// <param name="right">The second version to compare.</param>
+        /// <returns><see langword="true"/> if the value of <paramref name="left"/> is greater or equal
+        /// to the value of <paramref name="right"/>; otherwise, <see langword="false"/>.</returns>
         public static bool operator >=(DatabaseVersion left, DatabaseVersion right) => left.CompareTo(right) >= 0;
 
+        /// <summary>
+        /// Determines whether one version is less or equal to the other.
+        /// </summary>
+        /// <param name="left">The first version to compare.</param>
+        /// <param name="right">The second version to compare.</param>
+        /// <returns><see langword="true"/> if the value of <paramref name="left"/> is less or equal
+        /// to the value of <paramref name="right"/>; otherwise, <see langword="false"/>.</returns>
         public static bool operator <=(DatabaseVersion left, DatabaseVersion right) => left.CompareTo(right) <= 0;
 
+        /// <summary>
+        /// Defines an implicit conversion of a given string to a database version.
+        /// </summary>
+        /// <param name="value">A string to implicitly convert.</param>
         public static implicit operator DatabaseVersion(string value) => new DatabaseVersion(value);
 
         private static void EnsureVersionNonNegative(int major, int minor, int patch)
