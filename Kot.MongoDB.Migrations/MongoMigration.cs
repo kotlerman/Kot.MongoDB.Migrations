@@ -11,6 +11,12 @@ namespace Kot.MongoDB.Migrations
 
         public string Name { get; }
 
+        protected MongoMigration(DatabaseVersion version)
+        {
+            Version = version;
+            Name = GetType().Name;
+        }
+
         protected MongoMigration(DatabaseVersion version, string name)
         {
             Version = version;
