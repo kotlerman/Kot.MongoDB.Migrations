@@ -4,8 +4,12 @@ using MongoDB.Bson.Serialization.Serializers;
 
 namespace Kot.MongoDB.Migrations.Serializers
 {
+    /// <summary>
+    /// Database version serializer.
+    /// </summary>
     public class DatabaseVersionSerializer : SerializerBase<DatabaseVersion>
     {
+        /// <inheritdoc/>
         public override void Serialize(BsonSerializationContext context, BsonSerializationArgs args, DatabaseVersion value)
         {
             context.Writer.WriteStartDocument();
@@ -22,6 +26,7 @@ namespace Kot.MongoDB.Migrations.Serializers
             context.Writer.WriteEndDocument();
         }
 
+        /// <inheritdoc/>
         public override DatabaseVersion Deserialize(BsonDeserializationContext context, BsonDeserializationArgs args)
         {
             int major = 0;
