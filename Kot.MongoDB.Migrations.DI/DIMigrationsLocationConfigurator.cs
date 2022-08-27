@@ -7,6 +7,9 @@ using System.Text;
 
 namespace Kot.MongoDB.Migrations.DI
 {
+    /// <summary>
+    /// A configurator that configures where migrations should be loaded from.
+    /// </summary>
     public class DIMigrationsLocationConfigurator
     {
         private readonly IServiceCollection _serviceCollection;
@@ -18,6 +21,9 @@ namespace Kot.MongoDB.Migrations.DI
             _serviceCollection = serviceCollection;
         }
 
+        /// <summary>
+        /// Load migrations from the current domain.
+        /// </summary>
         public void LoadMigrationsFromCurrentDomain()
         {
             EnsureLocatorNotYetSelected();
@@ -26,6 +32,10 @@ namespace Kot.MongoDB.Migrations.DI
             IsLocatorSelected = true;
         }
 
+        /// <summary>
+        /// Load migrations from the specified assembly.
+        /// </summary>
+        /// <param name="assembly">Assembly to load migrations from.</param>
         public void LoadMigrationsFromAssembly(Assembly assembly)
         {
             EnsureLocatorNotYetSelected();
@@ -35,8 +45,15 @@ namespace Kot.MongoDB.Migrations.DI
             IsLocatorSelected = true;
         }
 
+        /// <summary>
+        /// Load migrations from the executing assembly.
+        /// </summary>
         public void LoadMigrationsFromExecutingAssembly() => LoadMigrationsFromAssembly(Assembly.GetExecutingAssembly());
 
+        /// <summary>
+        /// Load migrations from the specified namespace.
+        /// </summary>
+        /// <param name="namespace">Namespace to load migrations from.</param>
         public void LoadMigrationsFromNamespace(string @namespace)
         {
             EnsureLocatorNotYetSelected();
@@ -46,6 +63,10 @@ namespace Kot.MongoDB.Migrations.DI
             IsLocatorSelected = true;
         }
 
+        /// <summary>
+        /// Load specified collection of migrations.
+        /// </summary>
+        /// <param name="migrations">Migrations to load.</param>
         public void LoadMigrations(IEnumerable<IMongoMigration> migrations)
         {
             EnsureLocatorNotYetSelected();
