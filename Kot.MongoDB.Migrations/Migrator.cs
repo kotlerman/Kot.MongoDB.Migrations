@@ -8,6 +8,9 @@ using System.Threading.Tasks;
 
 namespace Kot.MongoDB.Migrations
 {
+    /// <summary>
+    /// Mongo database migrator that loads migrations and applies them to a database.
+    /// </summary>
     public class Migrator : IMigrator
     {
         private static readonly string MajorFieldName = $"{nameof(MigrationHistory.Version)}.{nameof(DatabaseVersion.Major)}";
@@ -20,6 +23,15 @@ namespace Kot.MongoDB.Migrations
         private readonly IMongoDatabase _db;
         private readonly IMongoCollection<MigrationHistory> _historyCollection;
 
+        /// <summary>
+        /// Initializes a new instance of <see cref="Migrator"/> that loads migrations using specified <paramref name="locator"/>
+        /// and applies them to a database that <paramref name="mongoClient"/> is connected to, according to <paramref name="options"/>.
+        /// </summary>
+        /// <param name="locator">Migrations locator that loads migrations.</param>
+        /// <param name="mongoClient">Mongo client connected to a database that migrations should be applied to.</param>
+        /// <param name="options">Migration options that customize how migrations are applied.</param>
+        /// <exception cref="ArgumentNullException"><paramref name="locator"/>, <paramref name="mongoClient"/> or
+        /// <paramref name="options"/> is <see langword="null"/>.</exception>
         public Migrator(IMigrationsLocator locator, IMongoClient mongoClient, MigrationOptions options)
         {
             _migrationsLocator = locator ?? throw new ArgumentNullException(nameof(locator));
@@ -29,6 +41,7 @@ namespace Kot.MongoDB.Migrations
             _historyCollection = _db.GetCollection<MigrationHistory>(_options.MigrationsCollectionName);
         }
 
+        /// <inheritdoc/>
         public async Task MigrateAsync(DatabaseVersion targetVersion = default, CancellationToken cancellationToken = default)
         {
             await CreateIndex();
