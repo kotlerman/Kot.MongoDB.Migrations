@@ -178,6 +178,81 @@ namespace Kot.MongoDB.Migrations.Tests
         }
 
         [Test]
+        public async Task FirstMigrationAlreadyApplied()
+        {
+            // Arrange
+            var migrations = new IMongoMigration[]
+            {
+                new MigratorTest_Migration("0.0.1"),
+                new MigratorTest_Migration("0.0.2"),
+            };
+
+            var historyDoc = new MigrationHistory
+            {
+                Name = migrations[0].Name,
+                Version = migrations[0].Version,
+                AppliedAt = DateTime.Now
+            };
+
+            await _histCollection.InsertOneAsync(historyDoc);
+
+            var migrator = SetupMigrator(migrations, TransactionScope.None);
+
+            var expectedHistoryDocs = migrations
+                .Select(x => new MigrationHistory { Name = x.Name, Version = x.Version, AppliedAt = DateTime.Now })
+                .ToList();
+
+            // Act
+            await migrator.MigrateAsync();
+
+            // Assert
+            List<MigrationHistory> actualHistoryDocs = await _histCollection.Find(FilterDefinition<MigrationHistory>.Empty).ToListAsync();
+
+            actualHistoryDocs.Should().HaveCount(migrations.Length)
+                .And.BeEquivalentTo(expectedHistoryDocs,
+                    opt => opt.Excluding(x => x.Id).UsingNonStrictDateTimeComparison());
+        }
+
+        [Test]
+        public async Task RollbackLastMigration()
+        {
+            // Arrange
+            var migrations = new IMongoMigration[]
+            {
+                new MigratorTest_Migration("0.0.1"),
+                new MigratorTest_Migration("0.0.2"),
+            };
+
+            var historyDocs = migrations
+                .Select(x => new MigrationHistory { Name = x.Name, Version = x.Version, AppliedAt = DateTime.Now })
+                .ToList();
+
+            await _histCollection.InsertManyAsync(historyDocs);
+
+            var migrator = SetupMigrator(migrations, TransactionScope.None);
+
+            var expectedHistoryDocs = new List<MigrationHistory>
+            {
+                new MigrationHistory
+                {
+                    Name = migrations[0].Name,
+                    Version = migrations[0].Version,
+                    AppliedAt = DateTime.Now
+                }
+            };
+
+            // Act
+            await migrator.MigrateAsync(migrations[0].Version);
+
+            // Assert
+            List<MigrationHistory> actualHistoryDocs = await _histCollection.Find(FilterDefinition<MigrationHistory>.Empty).ToListAsync();
+
+            actualHistoryDocs.Should().HaveCount(expectedHistoryDocs.Count)
+                .And.BeEquivalentTo(expectedHistoryDocs,
+                    opt => opt.Excluding(x => x.Id).UsingNonStrictDateTimeComparison());
+        }
+
+        [Test]
         public async Task MigrationException_NoTransaction()
         {
             // Arrange
@@ -276,7 +351,7 @@ namespace Kot.MongoDB.Migrations.Tests
             var migrator = SetupMigrator(migrations, TransactionScope.AllMigrations);
 
             // Act
-            Func<Task> migrateFunc = async () => await migrator.MigrateAsync();
+            Func<Task> migrateFunc = async () => await migrator.MigrateAsync("0.0.0");
 
             // Assert
             await migrateFunc.Should().ThrowAsync<Exception>();

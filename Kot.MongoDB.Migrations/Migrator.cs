@@ -42,23 +42,23 @@ namespace Kot.MongoDB.Migrations
         }
 
         /// <inheritdoc/>
-        public async Task MigrateAsync(DatabaseVersion targetVersion = default, CancellationToken cancellationToken = default)
+        public async Task MigrateAsync(DatabaseVersion? targetVersion = null, CancellationToken cancellationToken = default)
         {
             await CreateIndex();
 
-            DatabaseVersion currentVersion = await GetCurrentDatabaseVersion(_historyCollection, cancellationToken);
+            DatabaseVersion currVersion = await GetCurrentDatabaseVersion(_historyCollection, cancellationToken);
             IEnumerable<IMongoMigration> migrations = _migrationsLocator.Locate();
 
-            if (targetVersion != default && currentVersion == targetVersion)
+            if (currVersion == targetVersion)
             {
                 return;
             }
 
-            bool isUpgrade = targetVersion >= currentVersion;
+            bool isUpgrade = targetVersion > currVersion || targetVersion == null;
 
             IEnumerable<IMongoMigration> applicableMigrations = isUpgrade
-                ? migrations.TakeWhile(x => x.Version <= targetVersion || targetVersion == default)
-                : migrations.Reverse().TakeWhile(x => x.Version > targetVersion);
+                ? migrations.SkipWhile(x => x.Version <= currVersion).TakeWhile(x => x.Version <= targetVersion || targetVersion == null)
+                : migrations.Reverse().TakeWhile(x => x.Version > targetVersion.Value);
 
             switch (_options.TransactionScope)
             {
