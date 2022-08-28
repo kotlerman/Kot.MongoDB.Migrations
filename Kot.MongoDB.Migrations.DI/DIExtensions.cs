@@ -48,15 +48,15 @@ namespace Kot.MongoDB.Migrations.DI
         /// <summary>
         /// Registers services required to perform Mongo database migrations and configures migrations location.
         /// </summary>
-        /// <param name="serviceCollection">The <see cref="IServiceCollection"/>.</param>
+        /// <param name="services">The <see cref="IServiceCollection"/>.</param>
         /// <param name="connectionString">Connection string to the database that migrations should be applied to.</param>
         /// <param name="options">Options that customize how migrations are applied.</param>
         /// <param name="configure">A delegate to configure migrations location.</param>
         /// <returns>The <see cref="IServiceCollection"/>.</returns>
-        public static IServiceCollection AddMongoMigrations(this IServiceCollection serviceCollection, string connectionString,
+        public static IServiceCollection AddMongoMigrations(this IServiceCollection services, string connectionString,
             MigrationOptions options, Action<DIMigrationsLocationConfigurator> configure = null)
         {
-            return AddMongoMigrations(serviceCollection, new MongoClient(connectionString), options, configure);
+            return AddMongoMigrations(services, new MongoClient(connectionString), options, configure);
         }
 
         private static void ConfigureMigrationsLocation(IServiceCollection services, Action<DIMigrationsLocationConfigurator> configure)
