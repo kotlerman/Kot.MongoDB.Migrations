@@ -17,7 +17,12 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Tests", "Tests", "{C11C433E
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Kot.MongoDB.Migrations.DI.IntegrationTests", "Kot.MongoDB.Migrations.DI.IntegrationTests\Kot.MongoDB.Migrations.DI.IntegrationTests.csproj", "{C36B017D-FCE3-4739-A773-177F01577906}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Kot.MongoDB.Migrations.IntegrationTests", "Kot.MongoDB.Migrations.IntegrationTests\Kot.MongoDB.Migrations.IntegrationTests.csproj", "{A8CDF8AB-090D-4DC0-9C54-BE57B7365736}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Kot.MongoDB.Migrations.IntegrationTests", "Kot.MongoDB.Migrations.IntegrationTests\Kot.MongoDB.Migrations.IntegrationTests.csproj", "{A8CDF8AB-090D-4DC0-9C54-BE57B7365736}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{A20AFA69-F77E-40B8-A684-139227C3578B}"
+	ProjectSection(SolutionItems) = preProject
+		Directory.Build.props = Directory.Build.props
+	EndProjectSection
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

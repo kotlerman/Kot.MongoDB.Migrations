@@ -7,6 +7,12 @@
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
   </PropertyGroup>
 
+  <PropertyGroup>
+    <PackageVersion>1.0.0-beta</PackageVersion>
+    <Description>DI support for Kot.MongoDB.Migrations</Description>
+    <PackageTags>mongodb;mongodb-driver;migrations;transactions;di</PackageTags>
+  </PropertyGroup>
+
   <ItemGroup>
     <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="6.0.0" />
     <PackageReference Include="MongoDB.Driver" Version="2.15.0" />
@@ -18,6 +24,10 @@
 
   <ItemGroup>
     <InternalsVisibleTo Include="Kot.MongoDB.Migrations.DI.Tests" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="../kot.png" Pack="true" PackagePath="" />
   </ItemGroup>
 
 </Project>

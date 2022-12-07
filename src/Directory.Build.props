@@ -1,0 +1,14 @@
+<Project>
+  <PropertyGroup>
+    <Authors>kotlerman</Authors>
+    <PackageIcon>kot.png</PackageIcon>
+    <PackageProjectUrl>https://github.com/kotlerman/Kot.MongoDB.Migrations</PackageProjectUrl>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <PublishRepositoryUrl>true</PublishRepositoryUrl>
+    <IncludeSymbols>true</IncludeSymbols>
+    <SymbolPackageFormat>snupkg</SymbolPackageFormat>
+  </PropertyGroup>
+</Project>
