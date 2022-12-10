@@ -25,8 +25,8 @@ jobs:
     - name: Pack
       run: dotnet pack -c Release --no-build
     - name: Publish Kot.MongoDB.Migrations
-      working-directory: ./Kot.MongoDB.Migrations/bin/Release/
+      working-directory: ./src/Kot.MongoDB.Migrations/bin/Release/
       run: dotnet nuget push "*.nupkg" -k NUGET_KEY -s https://api.nuget.org/v3/index.json --skip-duplicate
     - name: Publish Kot.MongoDB.Migrations.DI
-      working-directory: ./Kot.MongoDB.Migrations.DI/bin/Release/
+      working-directory: ./src/Kot.MongoDB.Migrations.DI/bin/Release/
       run: dotnet nuget push "*.nupkg" -k NUGET_KEY -s https://api.nuget.org/v3/index.json --skip-duplicate
