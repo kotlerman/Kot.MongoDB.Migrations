@@ -19,7 +19,9 @@ jobs:
     - name: Restore dependencies
       run: dotnet restore
     - name: Build
-      run: dotnet build --no-restore
+      run: dotnet build -c Release --no-restore
+    - name: Test
+      run: dotnet test -c Release --no-build --verbosity normal -m:1
     - name: Pack
       run: dotnet pack -c Release --no-build
     - name: Publish Kot.MongoDB.Migrations
