@@ -1,0 +1,30 @@
+name: Publish
+
+on: workflow_dispatch
+
+jobs:
+  publish:
+    runs-on: ubuntu-20.04
+
+    defaults:
+      run:
+        working-directory: ./src
+
+    steps:
+    - uses: actions/checkout@v3
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v2
+      with:
+        dotnet-version: 6.0.x
+    - name: Restore dependencies
+      run: dotnet restore
+    - name: Build
+      run: dotnet build --no-restore
+    - name: Pack
+      run: dotnet pack -c Release --no-build
+    - name: Publish Kot.MongoDB.Migrations
+      working-directory: ./Kot.MongoDB.Migrations/bin/Release/
+      run: dotnet nuget push "*.nupkg" -k NUGET_KEY -s https://api.nuget.org/v3/index.json --skip-duplicate
+    - name: Publish Kot.MongoDB.Migrations.DI
+      working-directory: ./Kot.MongoDB.Migrations.DI/bin/Release/
+      run: dotnet nuget push "*.nupkg" -k NUGET_KEY -s https://api.nuget.org/v3/index.json --skip-duplicate
