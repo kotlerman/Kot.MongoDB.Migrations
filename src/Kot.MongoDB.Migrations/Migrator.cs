@@ -42,23 +42,46 @@ namespace Kot.MongoDB.Migrations
         }
 
         /// <inheritdoc/>
-        public async Task MigrateAsync(DatabaseVersion? targetVersion = null, CancellationToken cancellationToken = default)
+        public async Task<MigrationResult> MigrateAsync(DatabaseVersion? targetVersion = null, CancellationToken cancellationToken = default)
         {
+            var startTime = DateTime.UtcNow;
+
             await CreateIndex().ConfigureAwait(false);
 
-            DatabaseVersion currVersion = await GetCurrentDatabaseVersion(_historyCollection, cancellationToken).ConfigureAwait(false);
+            DatabaseVersion? initialVersion = await GetCurrentDatabaseVersion(_historyCollection, cancellationToken).ConfigureAwait(false);
+            DatabaseVersion currVersion = initialVersion ?? default;
+
             IEnumerable<IMongoMigration> migrations = _migrationsLocator.Locate();
 
             if (currVersion == targetVersion)
             {
-                return;
+                return new MigrationResult
+                {
+                    StartTime = startTime,
+                    FinishTime = DateTime.UtcNow,
+                    InitialVersion = initialVersion,
+                    FinalVersion = initialVersion,
+                    AppliedMigrations = new List<IMongoMigration>()
+                };
             }
 
             bool isUpgrade = targetVersion > currVersion || targetVersion == null;
+            List<IMongoMigration> applicableMigrations;
 
-            IEnumerable<IMongoMigration> applicableMigrations = isUpgrade
-                ? migrations.SkipWhile(x => x.Version <= currVersion).TakeWhile(x => x.Version <= targetVersion || targetVersion == null)
-                : migrations.Reverse().TakeWhile(x => x.Version > targetVersion.Value);
+            if (isUpgrade)
+            {
+                applicableMigrations = migrations
+                    .SkipWhile(x => x.Version <= currVersion)
+                    .TakeWhile(x => x.Version <= targetVersion || targetVersion == null)
+                    .ToList();
+            }
+            else
+            {
+                applicableMigrations = migrations
+                    .Reverse()
+                    .TakeWhile(x => x.Version > targetVersion.Value)
+                    .ToList();
+            }
 
             switch (_options.TransactionScope)
             {
@@ -72,6 +95,17 @@ namespace Kot.MongoDB.Migrations
                     await ApplyAllMigrationsWithoutTransaction(applicableMigrations, isUpgrade, cancellationToken).ConfigureAwait(false);
                     break;
             }
+
+            DatabaseVersion? finalVersion = await GetCurrentDatabaseVersion(_historyCollection, cancellationToken).ConfigureAwait(false);
+
+            return new MigrationResult
+            {
+                StartTime = startTime,
+                FinishTime = DateTime.UtcNow,
+                InitialVersion = initialVersion,
+                FinalVersion = finalVersion,
+                AppliedMigrations = applicableMigrations
+            };
         }
 
         private async Task CreateIndex()
@@ -195,7 +229,7 @@ namespace Kot.MongoDB.Migrations
             }
         }
 
-        private static async Task<DatabaseVersion> GetCurrentDatabaseVersion(IMongoCollection<MigrationHistory> historyCollection,
+        private static async Task<DatabaseVersion?> GetCurrentDatabaseVersion(IMongoCollection<MigrationHistory> historyCollection,
             CancellationToken cancellationToken)
         {
             var sort = Builders<MigrationHistory>.Sort
@@ -209,7 +243,7 @@ namespace Kot.MongoDB.Migrations
                 .FirstOrDefaultAsync(cancellationToken)
                 .ConfigureAwait(false);
 
-            return lastMigration?.Version ?? default;
+            return lastMigration?.Version;
         }
     }
 }

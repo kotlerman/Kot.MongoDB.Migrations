@@ -54,9 +54,17 @@ namespace Kot.MongoDB.Migrations.Tests
         {
             // Arrange
             var migrator = SetupMigrator(Enumerable.Empty<IMongoMigration>(), TransactionScope.None);
+            var expectedResult = new MigrationResult
+            {
+                AppliedMigrations = new List<IMongoMigration>(),
+                InitialVersion = null,
+                FinalVersion = null,
+                StartTime = DateTime.Now,
+                FinishTime = DateTime.Now
+            };
 
             // Act
-            await migrator.MigrateAsync();
+            MigrationResult actualResult = await migrator.MigrateAsync();
 
             // Assert
             var historyRecordsCount = await _histCollection.EstimatedDocumentCountAsync();
@@ -64,6 +72,7 @@ namespace Kot.MongoDB.Migrations.Tests
 
             historyRecordsCount.Should().Be(0);
             collectionNames.Should().ContainSingle(x => x == MigrationsCollectionName);
+            VerifyMigrationResult(actualResult, expectedResult);
         }
 
         [TestCase(TransactionScope.None, TestName = "ApplyUp_TransactionScopeNone")]
@@ -78,6 +87,14 @@ namespace Kot.MongoDB.Migrations.Tests
                 new MigratorTest_Migration("0.0.2"),
                 new MigratorTest_Migration("0.0.3"),
             };
+            var expectedResult = new MigrationResult
+            {
+                AppliedMigrations = migrations.ToList(),
+                InitialVersion = null,
+                FinalVersion = migrations[2].Version,
+                StartTime = DateTime.Now,
+                FinishTime = DateTime.Now
+            };
             var migrator = SetupMigrator(migrations, transactionScope);
 
             var expectedHistoryDocs = migrations
@@ -89,7 +106,7 @@ namespace Kot.MongoDB.Migrations.Tests
                 .ToList();
 
             // Act
-            await migrator.MigrateAsync(migrations[2].Version);
+            MigrationResult actualResult = await migrator.MigrateAsync(migrations[2].Version);
 
             // Assert
             List<MigrationHistory> actualHistoryDocs = await _histCollection.Find(FilterDefinition<MigrationHistory>.Empty).ToListAsync();
@@ -102,6 +119,8 @@ namespace Kot.MongoDB.Migrations.Tests
             actualTestDocs.Should()
                 .HaveCount(migrations.Length)
                 .And.BeEquivalentTo(expectedTestDocs);
+
+            VerifyMigrationResult(actualResult, expectedResult);
         }
 
         [TestCase(TransactionScope.None, TestName = "ApplyDown_TransactionScopeNone")]
@@ -115,6 +134,14 @@ namespace Kot.MongoDB.Migrations.Tests
                 new MigratorTest_Migration("0.0.1"),
                 new MigratorTest_Migration("0.0.2"),
                 new MigratorTest_Migration("0.0.3"),
+            };
+            var expectedResult = new MigrationResult
+            {
+                AppliedMigrations = migrations.Reverse().Take(2).ToList(),
+                InitialVersion = migrations[2].Version,
+                FinalVersion = migrations[0].Version,
+                StartTime = DateTime.Now,
+                FinishTime = DateTime.Now
             };
             var migrator = SetupMigrator(migrations, transactionScope);
 
@@ -131,7 +158,7 @@ namespace Kot.MongoDB.Migrations.Tests
             await _histCollection.InsertManyAsync(historyDocs);
 
             // Act
-            await migrator.MigrateAsync(migrations[0].Version);
+            MigrationResult actualResult = await migrator.MigrateAsync(migrations[0].Version);
 
             // Assert
             List<MigrationHistory> actualHistoryDocs = await _histCollection.Find(FilterDefinition<MigrationHistory>.Empty).ToListAsync();
@@ -143,6 +170,8 @@ namespace Kot.MongoDB.Migrations.Tests
 
             actualTestDocs.Should().HaveCount(1)
                 .And.ContainEquivalentOf(testDocs[0]);
+
+            VerifyMigrationResult(actualResult, expectedResult);
         }
 
         [Test]
@@ -152,6 +181,14 @@ namespace Kot.MongoDB.Migrations.Tests
             var migrations = new IMongoMigration[]
             {
                 new MigratorTest_Migration("0.0.1")
+            };
+            var expectedResult = new MigrationResult
+            {
+                AppliedMigrations = new List<IMongoMigration>(),
+                InitialVersion = migrations[0].Version,
+                FinalVersion = migrations[0].Version,
+                StartTime = DateTime.Now,
+                FinishTime = DateTime.Now
             };
             var migrator = SetupMigrator(migrations, TransactionScope.None);
 
@@ -165,7 +202,7 @@ namespace Kot.MongoDB.Migrations.Tests
             await _histCollection.InsertOneAsync(historyDoc);
 
             // Act
-            await migrator.MigrateAsync(migrations[0].Version);
+            MigrationResult actualResult = await migrator.MigrateAsync(migrations[0].Version);
 
             // Assert
             List<MigrationHistory> actualHistoryDocs = await _histCollection.Find(FilterDefinition<MigrationHistory>.Empty).ToListAsync();
@@ -175,6 +212,8 @@ namespace Kot.MongoDB.Migrations.Tests
                 .And.ContainEquivalentOf(historyDoc, opt => opt.Excluding(h => h.Id).UsingNonStrictDateTimeComparison());
 
             actualTestDocs.Should().BeEmpty();
+
+            VerifyMigrationResult(actualResult, expectedResult);
         }
 
         [Test]
@@ -185,6 +224,15 @@ namespace Kot.MongoDB.Migrations.Tests
             {
                 new MigratorTest_Migration("0.0.1"),
                 new MigratorTest_Migration("0.0.2"),
+            };
+
+            var expectedResult = new MigrationResult
+            {
+                AppliedMigrations = new List<IMongoMigration>() { migrations[1] },
+                InitialVersion = migrations[0].Version,
+                FinalVersion = migrations[1].Version,
+                StartTime = DateTime.Now,
+                FinishTime = DateTime.Now
             };
 
             var historyDoc = new MigrationHistory
@@ -203,7 +251,7 @@ namespace Kot.MongoDB.Migrations.Tests
                 .ToList();
 
             // Act
-            await migrator.MigrateAsync();
+            MigrationResult actualResult = await migrator.MigrateAsync();
 
             // Assert
             List<MigrationHistory> actualHistoryDocs = await _histCollection.Find(FilterDefinition<MigrationHistory>.Empty).ToListAsync();
@@ -211,6 +259,8 @@ namespace Kot.MongoDB.Migrations.Tests
             actualHistoryDocs.Should().HaveCount(migrations.Length)
                 .And.BeEquivalentTo(expectedHistoryDocs,
                     opt => opt.Excluding(x => x.Id).UsingNonStrictDateTimeComparison());
+
+            VerifyMigrationResult(actualResult, expectedResult);
         }
 
         [Test]
@@ -221,6 +271,15 @@ namespace Kot.MongoDB.Migrations.Tests
             {
                 new MigratorTest_Migration("0.0.1"),
                 new MigratorTest_Migration("0.0.2"),
+            };
+
+            var expectedResult = new MigrationResult
+            {
+                AppliedMigrations = new List<IMongoMigration>() { migrations[1] },
+                InitialVersion = migrations[1].Version,
+                FinalVersion = migrations[0].Version,
+                StartTime = DateTime.Now,
+                FinishTime = DateTime.Now
             };
 
             var historyDocs = migrations
@@ -242,7 +301,7 @@ namespace Kot.MongoDB.Migrations.Tests
             };
 
             // Act
-            await migrator.MigrateAsync(migrations[0].Version);
+            MigrationResult actualResult = await migrator.MigrateAsync(migrations[0].Version);
 
             // Assert
             List<MigrationHistory> actualHistoryDocs = await _histCollection.Find(FilterDefinition<MigrationHistory>.Empty).ToListAsync();
@@ -250,6 +309,8 @@ namespace Kot.MongoDB.Migrations.Tests
             actualHistoryDocs.Should().HaveCount(expectedHistoryDocs.Count)
                 .And.BeEquivalentTo(expectedHistoryDocs,
                     opt => opt.Excluding(x => x.Id).UsingNonStrictDateTimeComparison());
+
+            VerifyMigrationResult(actualResult, expectedResult);
         }
 
         [Test]
@@ -425,6 +486,12 @@ namespace Kot.MongoDB.Migrations.Tests
             var migrator = new Migrator(locatorMock.Object, _client, options);
 
             return migrator;
+        }
+
+        private static void VerifyMigrationResult(MigrationResult actual, MigrationResult expected)
+        {
+            actual.Should().BeEquivalentTo(expected, x => x.UsingNonStrictDateTimeComparison());
+            actual.FinishTime.Should().BeOnOrAfter(actual.StartTime);
         }
 
         class MigratorTest_Migration : MongoMigration

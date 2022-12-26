@@ -16,7 +16,7 @@ namespace Kot.MongoDB.Migrations
         /// </summary>
         /// <param name="targetVersion">Target version.</param>
         /// <param name="cancellationToken">Cancellation token.</param>
-        /// <returns><see cref="Task"/> representing the migration operation.</returns>
-        Task MigrateAsync(DatabaseVersion? targetVersion = null, CancellationToken cancellationToken = default);
+        /// <returns><see cref="Task"/> of <see cref="MigrationResult"/> representing migration result.</returns>
+        Task<MigrationResult> MigrateAsync(DatabaseVersion? targetVersion = null, CancellationToken cancellationToken = default);
     }
 }
