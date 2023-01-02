@@ -1,4 +1,5 @@
 using FluentAssertions;
+using Kot.MongoDB.Migrations.Exceptions;
 using Kot.MongoDB.Migrations.Locators;
 using Kot.MongoDB.Migrations.Tests.Extensions;
 using Microsoft.Extensions.Logging;
@@ -21,12 +22,14 @@ namespace Kot.MongoDB.Migrations.Tests
     {
         private const string DatabaseName = "IntegrationTest";
         private const string MigrationsCollectionName = "MigrationHistory";
+        private const string MigrationsLockCollectionName = "MigrationHistory.lock";
         private const string DocCollectionName = "DocCollection";
 
         private MongoDbRunner _runner;
         private IMongoClient _client;
         private IMongoDatabase _db;
         private IMongoCollection<MigrationHistory> _histCollection;
+        private IMongoCollection<MigrationLock> _lockCollection;
         private IMongoCollection<TestDoc> _docCollection;
 
         [SetUp]
@@ -40,6 +43,7 @@ namespace Kot.MongoDB.Migrations.Tests
             _client = new MongoClient(_runner.ConnectionString);
             _db = _client.GetDatabase(DatabaseName);
             _histCollection = _db.GetCollection<MigrationHistory>(MigrationsCollectionName);
+            _lockCollection = _db.GetCollection<MigrationLock>(MigrationsLockCollectionName);
             _docCollection = _db.GetCollection<TestDoc>(DocCollectionName);
         }
 
@@ -56,6 +60,7 @@ namespace Kot.MongoDB.Migrations.Tests
             var migrator = SetupMigrator(Enumerable.Empty<IMongoMigration>(), TransactionScope.None);
             var expectedResult = new MigrationResult
             {
+                Type = MigrationResultType.UpToDate,
                 AppliedMigrations = new List<IMongoMigration>(),
                 InitialVersion = null,
                 FinalVersion = null,
@@ -89,6 +94,7 @@ namespace Kot.MongoDB.Migrations.Tests
             };
             var expectedResult = new MigrationResult
             {
+                Type = MigrationResultType.Upgraded,
                 AppliedMigrations = migrations.ToList(),
                 InitialVersion = null,
                 FinalVersion = migrations[2].Version,
@@ -137,6 +143,7 @@ namespace Kot.MongoDB.Migrations.Tests
             };
             var expectedResult = new MigrationResult
             {
+                Type = MigrationResultType.Downgraded,
                 AppliedMigrations = migrations.Reverse().Take(2).ToList(),
                 InitialVersion = migrations[2].Version,
                 FinalVersion = migrations[0].Version,
@@ -228,6 +235,7 @@ namespace Kot.MongoDB.Migrations.Tests
 
             var expectedResult = new MigrationResult
             {
+                Type = MigrationResultType.Upgraded,
                 AppliedMigrations = new List<IMongoMigration>() { migrations[1] },
                 InitialVersion = migrations[0].Version,
                 FinalVersion = migrations[1].Version,
@@ -275,6 +283,7 @@ namespace Kot.MongoDB.Migrations.Tests
 
             var expectedResult = new MigrationResult
             {
+                Type = MigrationResultType.Downgraded,
                 AppliedMigrations = new List<IMongoMigration>() { migrations[1] },
                 InitialVersion = migrations[1].Version,
                 FinalVersion = migrations[0].Version,
@@ -473,7 +482,187 @@ namespace Kot.MongoDB.Migrations.Tests
             Assert.Throws<ArgumentNullException>(() => new Migrator(new Mock<IMigrationsLocator>().Object, _client, null));
         }
 
-        private Migrator SetupMigrator(IEnumerable<IMongoMigration> migrations, TransactionScope transactionScope)
+        [Test]
+        public async Task OtherMigrationInProgress_Cancel()
+        {
+            // Arrange
+            var migrations = new IMongoMigration[]
+            {
+                new MigratorTest_Migration("0.0.1"),
+                new MigratorTest_Migration("0.0.2"),
+                new MigratorTest_Migration("0.0.3"),
+            };
+            var expectedResult = new MigrationResult
+            {
+                Type = MigrationResultType.Cancelled,
+                AppliedMigrations = new List<IMongoMigration>(),
+                InitialVersion = null,
+                FinalVersion = null,
+                StartTime = DateTime.Now,
+                FinishTime = DateTime.Now
+            };
+            var migrator = SetupMigrator(migrations, TransactionScope.None, ParallelRunsBehavior.Cancel);
+            var lockDoc = new MigrationLock { AcquiredAt = new DateTime(2023, 1, 1, 0, 0, 0, DateTimeKind.Utc) };
+            await _lockCollection.InsertOneAsync(lockDoc);
+
+            // Act
+            MigrationResult actualResult = await migrator.MigrateAsync();
+
+            // Assert
+            List<MigrationHistory> actualHistoryDocs = await _histCollection.Find(FilterDefinition<MigrationHistory>.Empty).ToListAsync();
+            List<TestDoc> actualTestDocs = await _docCollection.Find(FilterDefinition<TestDoc>.Empty).ToListAsync();
+            MigrationLock actualLockDoc = await _lockCollection.Find(FilterDefinition<MigrationLock>.Empty).FirstOrDefaultAsync();
+
+            actualHistoryDocs.Should().BeEmpty();
+            actualTestDocs.Should().BeEmpty();
+            actualLockDoc.AcquiredAt.Should().Be(lockDoc.AcquiredAt);
+            VerifyMigrationResult(actualResult, expectedResult);
+        }
+
+        [Test]
+        public async Task OtherMigrationInProgress_Throw()
+        {
+            // Arrange
+            var migrations = new IMongoMigration[]
+            {
+                new MigratorTest_Migration("0.0.1"),
+                new MigratorTest_Migration("0.0.2"),
+                new MigratorTest_Migration("0.0.3"),
+            };
+            var migrator = SetupMigrator(migrations, TransactionScope.None, ParallelRunsBehavior.Throw);
+            var lockDoc = new MigrationLock { AcquiredAt = new DateTime(2023, 1, 1, 0, 0, 0, DateTimeKind.Utc) };
+            await _lockCollection.InsertOneAsync(lockDoc);
+
+            // Act
+            Func<Task> migrateFunc = async () => await migrator.MigrateAsync();
+
+            // Assert
+            await migrateFunc.Should().ThrowAsync<MigrationInProgressException>();
+
+            List<MigrationHistory> actualHistoryDocs = await _histCollection.Find(FilterDefinition<MigrationHistory>.Empty).ToListAsync();
+            List<TestDoc> actualTestDocs = await _docCollection.Find(FilterDefinition<TestDoc>.Empty).ToListAsync();
+            MigrationLock actualLockDoc = await _lockCollection.Find(FilterDefinition<MigrationLock>.Empty).FirstOrDefaultAsync();
+
+            actualHistoryDocs.Should().BeEmpty();
+            actualTestDocs.Should().BeEmpty();
+            actualLockDoc.AcquiredAt.Should().Be(lockDoc.AcquiredAt);
+        }
+
+        [Test]
+        public async Task ParallelMigrations_FirstApplied_SecondCancelled()
+        {
+            // Arrange
+            var completionSource = new TaskCompletionSource();
+            var migrationA = new MigratorTest_MigrationManualCompletion(completionSource.Task);
+            var migrationsA = new IMongoMigration[]
+            {
+                migrationA
+            };
+            var migrationsB = new IMongoMigration[]
+            {
+                new MigratorTest_Migration("0.0.1")
+            };
+
+            var expectedResultA = new MigrationResult
+            {
+                Type = MigrationResultType.Upgraded,
+                AppliedMigrations = migrationsA.ToList(),
+                InitialVersion = null,
+                FinalVersion = "0.0.1",
+                StartTime = DateTime.Now,
+                FinishTime = DateTime.Now.AddSeconds(10)
+            };
+            var expectedResultB = new MigrationResult
+            {
+                Type = MigrationResultType.Cancelled,
+                AppliedMigrations = new List<IMongoMigration>(),
+                InitialVersion = null,
+                FinalVersion = null,
+                StartTime = DateTime.Now,
+                FinishTime = DateTime.Now
+            };
+            var migratorA = SetupMigrator(migrationsA, TransactionScope.None, ParallelRunsBehavior.Cancel);
+            var migratorB = SetupMigrator(migrationsB, TransactionScope.None, ParallelRunsBehavior.Cancel);
+
+            // Act
+            Task<MigrationResult> actualResultTaskA = migratorA.MigrateAsync();
+            await migrationA.StartedTask;
+            MigrationResult actualResultB = await migratorB.MigrateAsync();
+            completionSource.SetResult();
+            MigrationResult actualResultA = await actualResultTaskA;
+
+            // Assert
+            List<MigrationHistory> actualHistoryDocs = await _histCollection.Find(FilterDefinition<MigrationHistory>.Empty).ToListAsync();
+            List<TestDoc> actualTestDocs = await _docCollection.Find(FilterDefinition<TestDoc>.Empty).ToListAsync();
+            MigrationLock actualLockDoc = await _lockCollection.Find(FilterDefinition<MigrationLock>.Empty).FirstOrDefaultAsync();
+
+            actualHistoryDocs.Should().HaveCount(1)
+                .And.Contain(x => x.Name == migrationA.Name && x.Version == migrationA.Version);
+
+            actualTestDocs.Should().HaveCount(1)
+                .And.Contain(x => x.Version == migrationA.Version);
+
+            actualLockDoc.Should().BeNull();
+
+            VerifyMigrationResult(actualResultA, expectedResultA);
+            VerifyMigrationResult(actualResultB, expectedResultB);
+        }
+
+        [Test]
+        public async Task ParallelMigrations_FirstApplied_SecondThrows()
+        {
+            // Arrange
+            var completionSource = new TaskCompletionSource();
+            var migrationA = new MigratorTest_MigrationManualCompletion(completionSource.Task);
+            var migrationsA = new IMongoMigration[]
+            {
+                migrationA
+            };
+            var migrationsB = new IMongoMigration[]
+            {
+                new MigratorTest_Migration("0.0.1")
+            };
+
+            var expectedResultA = new MigrationResult
+            {
+                Type = MigrationResultType.Upgraded,
+                AppliedMigrations = migrationsA.ToList(),
+                InitialVersion = null,
+                FinalVersion = "0.0.1",
+                StartTime = DateTime.Now,
+                FinishTime = DateTime.Now.AddSeconds(10)
+            };
+            var migratorA = SetupMigrator(migrationsA, TransactionScope.None, ParallelRunsBehavior.Throw);
+            var migratorB = SetupMigrator(migrationsB, TransactionScope.None, ParallelRunsBehavior.Throw);
+
+            // Act
+            Task<MigrationResult> actualResultTaskA = migratorA.MigrateAsync();
+            await migrationA.StartedTask;
+            Task<MigrationResult> actualResultTaskB = migratorB.MigrateAsync();
+            Task.WaitAny(actualResultTaskB);
+            completionSource.SetResult();
+            MigrationResult actualResultA = await actualResultTaskA;
+
+            // Assert
+            await ((Func<Task>)(() => actualResultTaskB)).Should().ThrowAsync<MigrationInProgressException>();
+
+            List<MigrationHistory> actualHistoryDocs = await _histCollection.Find(FilterDefinition<MigrationHistory>.Empty).ToListAsync();
+            List<TestDoc> actualTestDocs = await _docCollection.Find(FilterDefinition<TestDoc>.Empty).ToListAsync();
+            MigrationLock actualLockDoc = await _lockCollection.Find(FilterDefinition<MigrationLock>.Empty).FirstOrDefaultAsync();
+
+            actualHistoryDocs.Should().HaveCount(1)
+                .And.Contain(x => x.Name == migrationA.Name && x.Version == migrationA.Version);
+
+            actualTestDocs.Should().HaveCount(1)
+                .And.Contain(x => x.Version == migrationA.Version);
+
+            actualLockDoc.Should().BeNull();
+
+            VerifyMigrationResult(actualResultA, expectedResultA);
+        }
+
+        private Migrator SetupMigrator(IEnumerable<IMongoMigration> migrations, TransactionScope transactionScope,
+            ParallelRunsBehavior parallelRunsBehavior = ParallelRunsBehavior.Cancel)
         {
             var locatorMock = new Mock<IMigrationsLocator>();
             locatorMock.Setup(x => x.Locate()).Returns(migrations);
@@ -481,7 +670,8 @@ namespace Kot.MongoDB.Migrations.Tests
             var options = new MigrationOptions(DatabaseName)
             {
                 MigrationsCollectionName = MigrationsCollectionName,
-                TransactionScope = transactionScope
+                TransactionScope = transactionScope,
+                ParallelRunsBehavior = parallelRunsBehavior
             };
             var migrator = new Migrator(locatorMock.Object, _client, options);
 
@@ -549,6 +739,31 @@ namespace Kot.MongoDB.Migrations.Tests
             {
                 throw new Exception();
             }
+        }
+
+        class MigratorTest_MigrationManualCompletion : MongoMigration
+        {
+            private readonly Task _task;
+            private readonly TaskCompletionSource startedTaskSource = new TaskCompletionSource();
+
+            public Task StartedTask => startedTaskSource.Task;
+
+            public MigratorTest_MigrationManualCompletion(Task task) : base("0.0.1", "0.0.1")
+            {
+                _task = task;
+            }
+
+            public override async Task UpAsync(IMongoDatabase db, IClientSessionHandle session, CancellationToken cancellationToken)
+            {
+                startedTaskSource.SetResult();
+                IMongoCollection<TestDoc> collection = db.GetCollection<TestDoc>(DocCollectionName);
+                var doc = new TestDoc { Version = Version.ToString() };
+                await collection.InsertOneAsync(doc, null, cancellationToken);
+                await _task;
+            }
+
+            public override Task DownAsync(IMongoDatabase db, IClientSessionHandle session, CancellationToken cancellationToken)
+                => throw new NotImplementedException();
         }
 
         [BsonIgnoreExtraElements]

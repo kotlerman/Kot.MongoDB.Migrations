@@ -9,6 +9,11 @@ namespace Kot.MongoDB.Migrations
     public class MigrationResult
     {
         /// <summary>
+        /// Result type.
+        /// </summary>
+        public MigrationResultType Type { get; set; }
+
+        /// <summary>
         /// Time when migration started.
         /// </summary>
         public DateTime StartTime { get; set; }
@@ -31,6 +36,6 @@ namespace Kot.MongoDB.Migrations
         /// <summary>
         /// List of migrations that were applied.
         /// </summary>
-        public List<IMongoMigration> AppliedMigrations { get; set; }
+        public List<IMongoMigration> AppliedMigrations { get; set; } = new List<IMongoMigration>();
     }
 }

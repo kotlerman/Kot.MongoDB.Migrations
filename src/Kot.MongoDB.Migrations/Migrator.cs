@@ -1,4 +1,5 @@
-﻿using Kot.MongoDB.Migrations.Locators;
+﻿using Kot.MongoDB.Migrations.Exceptions;
+using Kot.MongoDB.Migrations.Locators;
 using MongoDB.Driver;
 using System;
 using System.Collections.Generic;
@@ -22,6 +23,7 @@ namespace Kot.MongoDB.Migrations
         private readonly MigrationOptions _options;
         private readonly IMongoDatabase _db;
         private readonly IMongoCollection<MigrationHistory> _historyCollection;
+        private readonly IMongoCollection<MigrationLock> _lockCollection;
 
         /// <summary>
         /// Initializes a new instance of <see cref="Migrator"/> that loads migrations using specified <paramref name="locator"/>
@@ -39,12 +41,31 @@ namespace Kot.MongoDB.Migrations
             _options = options ?? throw new ArgumentNullException(nameof(options));
             _db = _mongoClient.GetDatabase(_options.DatabaseName);
             _historyCollection = _db.GetCollection<MigrationHistory>(_options.MigrationsCollectionName);
+            _lockCollection = _db.GetCollection<MigrationLock>(_options.MigrationsLockCollectionName);
         }
 
         /// <inheritdoc/>
         public async Task<MigrationResult> MigrateAsync(DatabaseVersion? targetVersion = null, CancellationToken cancellationToken = default)
         {
             var startTime = DateTime.UtcNow;
+
+            if (!await TryAcquireDbLock(cancellationToken).ConfigureAwait(false))
+            {
+                switch (_options.ParallelRunsBehavior)
+                {
+                    case ParallelRunsBehavior.Throw:
+                        throw new MigrationInProgressException();
+
+                    case ParallelRunsBehavior.Cancel:
+                    default:
+                        return new MigrationResult
+                        {
+                            Type = MigrationResultType.Cancelled,
+                            StartTime = startTime,
+                            FinishTime = DateTime.UtcNow
+                        };
+                }
+            }
 
             await CreateIndex().ConfigureAwait(false);
 
@@ -57,11 +78,11 @@ namespace Kot.MongoDB.Migrations
             {
                 return new MigrationResult
                 {
+                    Type = MigrationResultType.UpToDate,
                     StartTime = startTime,
                     FinishTime = DateTime.UtcNow,
                     InitialVersion = initialVersion,
-                    FinalVersion = initialVersion,
-                    AppliedMigrations = new List<IMongoMigration>()
+                    FinalVersion = initialVersion
                 };
             }
 
@@ -83,6 +104,18 @@ namespace Kot.MongoDB.Migrations
                     .ToList();
             }
 
+            if (applicableMigrations.Count == 0)
+            {
+                return new MigrationResult
+                {
+                    Type = MigrationResultType.UpToDate,
+                    StartTime = startTime,
+                    FinishTime = DateTime.UtcNow,
+                    InitialVersion = initialVersion,
+                    FinalVersion = initialVersion,
+                };
+            }
+
             switch (_options.TransactionScope)
             {
                 case TransactionScope.AllMigrations:
@@ -98,14 +131,34 @@ namespace Kot.MongoDB.Migrations
 
             DatabaseVersion? finalVersion = await GetCurrentDatabaseVersion(_historyCollection, cancellationToken).ConfigureAwait(false);
 
+            await ReleaseDbLock(cancellationToken).ConfigureAwait(false);
+
             return new MigrationResult
             {
+                Type = isUpgrade ? MigrationResultType.Upgraded : MigrationResultType.Downgraded,
                 StartTime = startTime,
                 FinishTime = DateTime.UtcNow,
                 InitialVersion = initialVersion,
                 FinalVersion = finalVersion,
                 AppliedMigrations = applicableMigrations
             };
+        }
+
+        private async Task<bool> TryAcquireDbLock(CancellationToken cancellationToken)
+        {
+            UpdateResult result = await _lockCollection.UpdateOneAsync(
+                Builders<MigrationLock>.Filter.Empty,
+                Builders<MigrationLock>.Update.SetOnInsert(x => x.AcquiredAt, DateTime.UtcNow),
+                new UpdateOptions { IsUpsert = true },
+                cancellationToken: cancellationToken)
+                .ConfigureAwait(false);
+
+            return result.MatchedCount == 0;
+        }
+
+        private async Task ReleaseDbLock(CancellationToken cancellationToken)
+        {
+            await _lockCollection.DeleteOneAsync(Builders<MigrationLock>.Filter.Empty, cancellationToken).ConfigureAwait(false);
         }
 
         private async Task CreateIndex()

@@ -39,6 +39,11 @@ namespace Kot.MongoDB.Migrations
         }
 
         /// <summary>
+        /// Name of a collection that is used for locking.
+        /// </summary>
+        public string MigrationsLockCollectionName => MigrationsCollectionName + ".lock";
+
+        /// <summary>
         /// Specifies whether migrations are applied as part of a transaction or independently.
         /// </summary>
         public TransactionScope TransactionScope { get; set; } = TransactionScope.None;
@@ -47,6 +52,11 @@ namespace Kot.MongoDB.Migrations
         /// Specifies client session options when <see cref="TransactionScope"/> is not <see cref="TransactionScope.None"/>.
         /// </summary>
         public ClientSessionOptions ClientSessionOptions { get; set; }
+
+        /// <summary>
+        /// Specifies expected behavior when migration is already in progress.
+        /// </summary>
+        public ParallelRunsBehavior ParallelRunsBehavior { get; set; } = ParallelRunsBehavior.Cancel;
 
         /// <summary>
         /// Instantiates a new instance of <see cref="MigrationOptions"/>.
