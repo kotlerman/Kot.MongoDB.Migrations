@@ -1,5 +1,6 @@
 ﻿using Kot.MongoDB.Migrations.Exceptions;
 using Kot.MongoDB.Migrations.Locators;
+using Microsoft.Extensions.Logging;
 using MongoDB.Driver;
 using System;
 using System.Collections.Generic;
@@ -21,6 +22,7 @@ namespace Kot.MongoDB.Migrations
         private readonly IMigrationsLocator _migrationsLocator;
         private readonly IMongoClient _mongoClient;
         private readonly MigrationOptions _options;
+        private readonly ILogger _logger;
         private readonly IMongoDatabase _db;
         private readonly IMongoCollection<MigrationHistory> _historyCollection;
         private readonly IMongoCollection<MigrationLock> _lockCollection;
@@ -32,13 +34,15 @@ namespace Kot.MongoDB.Migrations
         /// <param name="locator">Migrations locator that loads migrations.</param>
         /// <param name="mongoClient">Mongo client connected to a database that migrations should be applied to.</param>
         /// <param name="options">Migration options that customize how migrations are applied.</param>
+        /// <param name="logger">Logger.</param>
         /// <exception cref="ArgumentNullException"><paramref name="locator"/>, <paramref name="mongoClient"/> or
         /// <paramref name="options"/> is <see langword="null"/>.</exception>
-        public Migrator(IMigrationsLocator locator, IMongoClient mongoClient, MigrationOptions options)
+        public Migrator(IMigrationsLocator locator, IMongoClient mongoClient, MigrationOptions options, ILogger<Migrator> logger = null)
         {
             _migrationsLocator = locator ?? throw new ArgumentNullException(nameof(locator));
             _mongoClient = mongoClient ?? throw new ArgumentNullException(nameof(mongoClient));
             _options = options ?? throw new ArgumentNullException(nameof(options));
+            _logger = logger;
             _db = _mongoClient.GetDatabase(_options.DatabaseName);
             _historyCollection = _db.GetCollection<MigrationHistory>(_options.MigrationsCollectionName);
             _lockCollection = _db.GetCollection<MigrationLock>(_options.MigrationsLockCollectionName);
@@ -47,17 +51,32 @@ namespace Kot.MongoDB.Migrations
         /// <inheritdoc/>
         public async Task<MigrationResult> MigrateAsync(DatabaseVersion? targetVersion = null, CancellationToken cancellationToken = default)
         {
-            var startTime = DateTime.UtcNow;
-
-            if (!await TryAcquireDbLock(cancellationToken).ConfigureAwait(false))
+            if (targetVersion.HasValue)
             {
+                _logger?.LogInformation("Starting migration. Target version is {version}.", targetVersion);
+            }
+            else
+            {
+                _logger?.LogInformation("Starting migration.");
+            }
+
+            var startTime = DateTime.UtcNow;
+            _logger?.LogDebug("Acquiring DB lock.");
+            bool lockAcquired = await TryAcquireDbLock(cancellationToken).ConfigureAwait(false);
+
+            if (!lockAcquired)
+            {
+                _logger?.LogDebug("Failed to acquire DB lock.");
+
                 switch (_options.ParallelRunsBehavior)
                 {
                     case ParallelRunsBehavior.Throw:
+                        _logger?.LogError("Other migration in progress detected.");
                         throw new MigrationInProgressException();
 
                     case ParallelRunsBehavior.Cancel:
                     default:
+                        _logger?.LogInformation("Other migration in progress detected. Cancelling current run.");
                         return new MigrationResult
                         {
                             Type = MigrationResultType.Cancelled,
@@ -67,15 +86,22 @@ namespace Kot.MongoDB.Migrations
                 }
             }
 
+            _logger?.LogDebug("Creating indexes for migrations history collection.");
             await CreateIndex().ConfigureAwait(false);
 
+            _logger?.LogDebug("Getting current DB version.");
             DatabaseVersion? initialVersion = await GetCurrentDatabaseVersion(_historyCollection, cancellationToken).ConfigureAwait(false);
             DatabaseVersion currVersion = initialVersion ?? default;
+            _logger?.LogInformation("Current DB version is {version}.", currVersion);
 
-            IEnumerable<IMongoMigration> migrations = _migrationsLocator.Locate();
+            _logger?.LogDebug("Locating migrations.");
+            List<IMongoMigration> migrations = _migrationsLocator.Locate().ToList();
+            _logger?.LogInformation("Found {count} migrations.", migrations.Count);
 
             if (currVersion == targetVersion)
             {
+                _logger?.LogInformation("The DB is up-to-date.");
+
                 return new MigrationResult
                 {
                     Type = MigrationResultType.UpToDate,
@@ -99,13 +125,15 @@ namespace Kot.MongoDB.Migrations
             else
             {
                 applicableMigrations = migrations
-                    .Reverse()
+                    .Reverse<IMongoMigration>()
                     .TakeWhile(x => x.Version > targetVersion.Value)
                     .ToList();
             }
 
             if (applicableMigrations.Count == 0)
             {
+                _logger?.LogInformation("The DB is up-to-date.");
+
                 return new MigrationResult
                 {
                     Type = MigrationResultType.UpToDate,
@@ -114,6 +142,15 @@ namespace Kot.MongoDB.Migrations
                     InitialVersion = initialVersion,
                     FinalVersion = initialVersion,
                 };
+            }
+
+            if (isUpgrade)
+            {
+                _logger?.LogInformation("Upgrading the DB with {count} applicable migrations.", applicableMigrations.Count);
+            }
+            else
+            {
+                _logger?.LogInformation("Downgrading the DB with {count} applicable migrations.", applicableMigrations.Count);
             }
 
             switch (_options.TransactionScope)
@@ -129,9 +166,14 @@ namespace Kot.MongoDB.Migrations
                     break;
             }
 
+            _logger?.LogDebug("Verifying DB version after migration.");
             DatabaseVersion? finalVersion = await GetCurrentDatabaseVersion(_historyCollection, cancellationToken).ConfigureAwait(false);
+            _logger?.LogInformation("The DB was migrated to version {version}.", finalVersion);
 
+            _logger?.LogDebug("Releasing DB lock.");
             await ReleaseDbLock(cancellationToken).ConfigureAwait(false);
+            _logger?.LogDebug("DB lock released.");
+            _logger?.LogInformation("Migration completed.");
 
             return new MigrationResult
             {
@@ -177,9 +219,12 @@ namespace Kot.MongoDB.Migrations
         private async Task ApplyAllMigrationsInOneTransaction(IEnumerable<IMongoMigration> migrations, bool isUpgrade,
             CancellationToken cancellationToken)
         {
+            _logger?.LogDebug("Applying all migrations in one transaction.");
+
             using (IClientSessionHandle session = await _mongoClient.StartSessionAsync(_options.ClientSessionOptions, cancellationToken)
                 .ConfigureAwait(false))
             {
+                _logger?.LogDebug("Starting a transaction.");
                 session.StartTransaction();
 
                 try
@@ -189,10 +234,12 @@ namespace Kot.MongoDB.Migrations
                         await ApplyMigration(session, migration, isUpgrade, cancellationToken).ConfigureAwait(false);
                     }
 
+                    _logger?.LogDebug("Commiting the transaction.");
                     await session.CommitTransactionAsync(cancellationToken).ConfigureAwait(false);
                 }
-                catch
+                catch (Exception ex)
                 {
+                    _logger?.LogDebug(ex, "There was an error while applying the migrations. Aborting the transaction.");
                     await session.AbortTransactionAsync(cancellationToken).ConfigureAwait(false);
                     throw;
                 }
@@ -202,20 +249,25 @@ namespace Kot.MongoDB.Migrations
         private async Task ApplyAllMigrationsInSeparateTransactions(IEnumerable<IMongoMigration> migrations, bool isUpgrade,
             CancellationToken cancellationToken)
         {
+            _logger?.LogDebug("Applying migrations in separate transactions.");
+
             foreach (IMongoMigration migration in migrations)
             {
                 using (IClientSessionHandle session = await _mongoClient.StartSessionAsync(_options.ClientSessionOptions, cancellationToken)
                     .ConfigureAwait(false))
                 {
+                    _logger?.LogDebug("Starting a transaction for migration {name} ({version}).", migration.Name, migration.Version);
                     session.StartTransaction();
 
                     try
                     {
                         await ApplyMigration(session, migration, isUpgrade, cancellationToken).ConfigureAwait(false);
+                        _logger?.LogDebug("Commiting the transaction.");
                         await session.CommitTransactionAsync(cancellationToken).ConfigureAwait(false);
                     }
-                    catch
+                    catch (Exception ex)
                     {
+                        _logger?.LogDebug(ex, "There was an error while applying the migration. Aborting the transaction.");
                         await session.AbortTransactionAsync(cancellationToken).ConfigureAwait(false);
                         throw;
                     }
@@ -226,6 +278,8 @@ namespace Kot.MongoDB.Migrations
         private async Task ApplyAllMigrationsWithoutTransaction(IEnumerable<IMongoMigration> migrations, bool isUpgrade,
             CancellationToken cancellationToken)
         {
+            _logger?.LogDebug("Applying all migrations without transactions.");
+
             foreach (IMongoMigration migration in migrations)
             {
                 await ApplyMigration(null, migration, isUpgrade, cancellationToken).ConfigureAwait(false);
@@ -235,6 +289,8 @@ namespace Kot.MongoDB.Migrations
         private async Task ApplyMigration(IClientSessionHandle session, IMongoMigration migration, bool isUpgrade,
             CancellationToken cancellationToken)
         {
+            _logger?.LogInformation("Applying migration {name} ({version}).", migration.Name, migration.Version);
+
             if (isUpgrade)
             {
                 await ApplyMigrationUp(session, migration, cancellationToken).ConfigureAwait(false);
@@ -247,7 +303,9 @@ namespace Kot.MongoDB.Migrations
 
         private async Task ApplyMigrationUp(IClientSessionHandle session, IMongoMigration migration, CancellationToken cancellationToken)
         {
+            _logger?.LogDebug("Applying the migration (UP).");
             await migration.UpAsync(_db, session, cancellationToken).ConfigureAwait(false);
+            _logger?.LogDebug("Migration applied.");
 
             var historyEntry = new MigrationHistory
             {
@@ -255,6 +313,8 @@ namespace Kot.MongoDB.Migrations
                 Name = migration.Name,
                 AppliedAt = DateTime.Now
             };
+
+            _logger?.LogDebug("Writing history entry.");
 
             if (session == null)
             {
@@ -264,11 +324,16 @@ namespace Kot.MongoDB.Migrations
             {
                 await _historyCollection.InsertOneAsync(session, historyEntry, null, cancellationToken).ConfigureAwait(false);
             }
+
+            _logger?.LogDebug("History entry saved.");
         }
 
         private async Task ApplyMigrationDown(IClientSessionHandle session, IMongoMigration migration, CancellationToken cancellationToken)
         {
+            _logger?.LogDebug("Applying the migration (DOWN).");
             await migration.DownAsync(_db, session, cancellationToken);
+            _logger?.LogDebug("Migration applied.");
+            _logger?.LogDebug("Deleting history entry.");
 
             if (session == null)
             {
@@ -280,6 +345,8 @@ namespace Kot.MongoDB.Migrations
                 await _historyCollection.DeleteOneAsync(session, x => x.Version == migration.Version, null, cancellationToken)
                     .ConfigureAwait(false);
             }
+
+            _logger?.LogDebug("History entry deleted.");
         }
 
         private static async Task<DatabaseVersion?> GetCurrentDatabaseVersion(IMongoCollection<MigrationHistory> historyCollection,
