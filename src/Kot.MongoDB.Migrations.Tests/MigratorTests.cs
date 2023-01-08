@@ -2,7 +2,6 @@ using FluentAssertions;
 using Kot.MongoDB.Migrations.Exceptions;
 using Kot.MongoDB.Migrations.Locators;
 using Kot.MongoDB.Migrations.Tests.Extensions;
-using Kot.MongoDB.Migrations.Tests.Util;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 using Mongo2Go;
@@ -60,7 +59,6 @@ namespace Kot.MongoDB.Migrations.Tests
         public async Task NoMigrations(bool withLogger)
         {
             // Arrange
-            var loggerWrapper = new LoggerWrapper<Migrator>(withLogger);
             var migrator = SetupMigrator(Enumerable.Empty<IMongoMigration>(), TransactionScope.None, withLogger);
             var expectedResult = new MigrationResult
             {
