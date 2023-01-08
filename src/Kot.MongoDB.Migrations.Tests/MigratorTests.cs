@@ -54,8 +54,7 @@ namespace Kot.MongoDB.Migrations.Tests
             _runner.Dispose();
         }
 
-        [TestCase(false, TestName = "NoMigrations_WithoutLogger")]
-        [TestCase(true, TestName = "NoMigrations_WithLogger")]
+        [TestCaseSource(typeof(MigratorTestCases), nameof(MigratorTestCases.NoMigrations))]
         public async Task NoMigrations(bool withLogger)
         {
             // Arrange
@@ -82,12 +81,7 @@ namespace Kot.MongoDB.Migrations.Tests
             VerifyMigrationResult(actualResult, expectedResult);
         }
 
-        [TestCase(TransactionScope.None, false, TestName = "ApplyUp_TransactionScopeNone_WithoutLogger")]
-        [TestCase(TransactionScope.SingleMigration, false, TestName = "ApplyUp_TransactionScopeSingleMigration_WithoutLogger")]
-        [TestCase(TransactionScope.AllMigrations, false, TestName = "ApplyUp_TransactionScopeAllMigrations_WithoutLogger")]
-        [TestCase(TransactionScope.None, true, TestName = "ApplyUp_TransactionScopeNone_WithLogger")]
-        [TestCase(TransactionScope.SingleMigration, true, TestName = "ApplyUp_TransactionScopeSingleMigration_WithLogger")]
-        [TestCase(TransactionScope.AllMigrations, true, TestName = "ApplyUp_TransactionScopeAllMigrations_WithLogger")]
+        [TestCaseSource(typeof(MigratorTestCases), nameof(MigratorTestCases.ApplyUp))]
         public async Task ApplyUp(TransactionScope transactionScope, bool withLogger)
         {
             // Arrange
@@ -134,12 +128,7 @@ namespace Kot.MongoDB.Migrations.Tests
             VerifyMigrationResult(actualResult, expectedResult);
         }
 
-        [TestCase(TransactionScope.None, false, TestName = "ApplyDown_TransactionScopeNone_WithoutLogger")]
-        [TestCase(TransactionScope.SingleMigration, false, TestName = "ApplyDown_TransactionScopeSingleMigration_WithoutLogger")]
-        [TestCase(TransactionScope.AllMigrations, false, TestName = "ApplyDown_TransactionScopeAllMigrations_WithoutLogger")]
-        [TestCase(TransactionScope.None, true, TestName = "ApplyDown_TransactionScopeNone_WithLogger")]
-        [TestCase(TransactionScope.SingleMigration, true, TestName = "ApplyDown_TransactionScopeSingleMigration_WithLogger")]
-        [TestCase(TransactionScope.AllMigrations, true, TestName = "ApplyDown_TransactionScopeAllMigrations_WithLogger")]
+        [TestCaseSource(typeof(MigratorTestCases), nameof(MigratorTestCases.ApplyDown))]
         public async Task ApplyDown(TransactionScope transactionScope, bool withLogger)
         {
             // Arrange
@@ -189,8 +178,7 @@ namespace Kot.MongoDB.Migrations.Tests
             VerifyMigrationResult(actualResult, expectedResult);
         }
 
-        [TestCase(false, TestName = "TargetVersionEqualsCurrent_WithoutLogger")]
-        [TestCase(true, TestName = "TargetVersionEqualsCurrent_WithLogger")]
+        [TestCaseSource(typeof(MigratorTestCases), nameof(MigratorTestCases.TargetVersionEqualsCurrent))]
         public async Task TargetVersionEqualsCurrent(bool withLogger)
         {
             // Arrange
@@ -232,8 +220,7 @@ namespace Kot.MongoDB.Migrations.Tests
             VerifyMigrationResult(actualResult, expectedResult);
         }
 
-        [TestCase(false, TestName = "FirstMigrationAlreadyApplied_WithoutLogger")]
-        [TestCase(true, TestName = "FirstMigrationAlreadyApplied_WithLogger")]
+        [TestCaseSource(typeof(MigratorTestCases), nameof(MigratorTestCases.FirstMigrationAlreadyApplied))]
         public async Task FirstMigrationAlreadyApplied(bool withLogger)
         {
             // Arrange
@@ -281,8 +268,7 @@ namespace Kot.MongoDB.Migrations.Tests
             VerifyMigrationResult(actualResult, expectedResult);
         }
 
-        [TestCase(false, TestName = "RollbackLastMigration_WithoutLogger")]
-        [TestCase(true, TestName = "RollbackLastMigration_WithLogger")]
+        [TestCaseSource(typeof(MigratorTestCases), nameof(MigratorTestCases.RollbackLastMigration))]
         public async Task RollbackLastMigration(bool withLogger)
         {
             // Arrange
@@ -333,8 +319,7 @@ namespace Kot.MongoDB.Migrations.Tests
             VerifyMigrationResult(actualResult, expectedResult);
         }
 
-        [TestCase(false, TestName = "RollbackLastMigration_WithoutLogger")]
-        [TestCase(true, TestName = "RollbackLastMigration_WithLogger")]
+        [TestCaseSource(typeof(MigratorTestCases), nameof(MigratorTestCases.MigrationException_NoTransaction))]
         public async Task MigrationException_NoTransaction(bool withLogger)
         {
             // Arrange
@@ -357,8 +342,7 @@ namespace Kot.MongoDB.Migrations.Tests
             actualTestDocs.Should().BeEmpty();
         }
 
-        [TestCase(false, TestName = "MigrationException_SingleMigrationTransaction_WithoutLogger")]
-        [TestCase(true, TestName = "MigrationException_SingleMigrationTransaction_WithLogger")]
+        [TestCaseSource(typeof(MigratorTestCases), nameof(MigratorTestCases.MigrationException_SingleMigrationTransaction))]
         public async Task MigrationException_SingleMigrationTransaction(bool withLogger)
         {
             // Arrange
@@ -385,8 +369,7 @@ namespace Kot.MongoDB.Migrations.Tests
                 .And.Contain(x => x.Version == migrations[0].Version);
         }
 
-        [TestCase(false, TestName = "MigrationException_AllMigrationsTransaction_Up_WithoutLogger")]
-        [TestCase(true, TestName = "MigrationException_AllMigrationsTransaction_Up_WithLogger")]
+        [TestCaseSource(typeof(MigratorTestCases), nameof(MigratorTestCases.MigrationException_AllMigrationsTransaction_Up))]
         public async Task MigrationException_AllMigrationsTransaction_Up(bool withLogger)
         {
             // Arrange
@@ -410,8 +393,7 @@ namespace Kot.MongoDB.Migrations.Tests
             actualTestDocs.Should().BeEmpty();
         }
 
-        [TestCase(false, TestName = "MigrationException_AllMigrationsTransaction_Down_WithoutLogger")]
-        [TestCase(true, TestName = "MigrationException_AllMigrationsTransaction_Down_WithLogger")]
+        [TestCaseSource(typeof(MigratorTestCases), nameof(MigratorTestCases.MigrationException_AllMigrationsTransaction_Down))]
         public async Task MigrationException_AllMigrationsTransaction_Down(bool withLogger)
         {
             // Arrange
@@ -453,8 +435,7 @@ namespace Kot.MongoDB.Migrations.Tests
                 .And.BeEquivalentTo(testDocs);
         }
 
-        [TestCase(false, TestName = "IndexExists_WithoutLogger")]
-        [TestCase(true, TestName = "IndexExists_WithLogger")]
+        [TestCaseSource(typeof(MigratorTestCases), nameof(MigratorTestCases.IndexExists))]
         public async Task IndexExists(bool withLogger)
         {
             // Arrange
@@ -498,8 +479,7 @@ namespace Kot.MongoDB.Migrations.Tests
             Assert.Throws<ArgumentNullException>(() => new Migrator(new Mock<IMigrationsLocator>().Object, _client, null));
         }
 
-        [TestCase(false, TestName = "OtherMigrationInProgress_Cancel_WithoutLogger")]
-        [TestCase(true, TestName = "OtherMigrationInProgress_Cancel_WithLogger")]
+        [TestCaseSource(typeof(MigratorTestCases), nameof(MigratorTestCases.OtherMigrationInProgress_Cancel))]
         public async Task OtherMigrationInProgress_Cancel(bool withLogger)
         {
             // Arrange
@@ -536,8 +516,7 @@ namespace Kot.MongoDB.Migrations.Tests
             VerifyMigrationResult(actualResult, expectedResult);
         }
 
-        [TestCase(false, TestName = "OtherMigrationInProgress_Throw_WithoutLogger")]
-        [TestCase(true, TestName = "OtherMigrationInProgress_Throw_WithLogger")]
+        [TestCaseSource(typeof(MigratorTestCases), nameof(MigratorTestCases.OtherMigrationInProgress_Throw))]
         public async Task OtherMigrationInProgress_Throw(bool withLogger)
         {
             // Arrange
@@ -566,8 +545,7 @@ namespace Kot.MongoDB.Migrations.Tests
             actualLockDoc.AcquiredAt.Should().Be(lockDoc.AcquiredAt);
         }
 
-        [TestCase(false, TestName = "ParallelMigrations_FirstApplied_SecondCancelled_WithoutLogger")]
-        [TestCase(true, TestName = "ParallelMigrations_FirstApplied_SecondCancelled_WithLogger")]
+        [TestCaseSource(typeof(MigratorTestCases), nameof(MigratorTestCases.ParallelMigrations_FirstApplied_SecondCancelled))]
         public async Task ParallelMigrations_FirstApplied_SecondCancelled(bool withLogger)
         {
             // Arrange
@@ -627,8 +605,7 @@ namespace Kot.MongoDB.Migrations.Tests
             VerifyMigrationResult(actualResultB, expectedResultB);
         }
 
-        [TestCase(false, TestName = "ParallelMigrations_FirstApplied_SecondThrows_WithoutLogger")]
-        [TestCase(true, TestName = "ParallelMigrations_FirstApplied_SecondThrows_WithLogger")]
+        [TestCaseSource(typeof(MigratorTestCases), nameof(MigratorTestCases.ParallelMigrations_FirstApplied_SecondThrows))]
         public async Task ParallelMigrations_FirstApplied_SecondThrows(bool withLogger)
         {
             // Arrange
