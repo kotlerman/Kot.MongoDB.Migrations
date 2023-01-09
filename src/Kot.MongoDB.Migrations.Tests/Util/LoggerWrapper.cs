@@ -19,7 +19,7 @@ namespace Kot.MongoDB.Migrations.Tests.Util
 
                 var logger = new LoggerConfiguration()
                     .MinimumLevel.Debug()
-                    .WriteTo.TextWriter(_stringWriter, outputTemplate: "[{Level}] {Message}{NewLine}{Exception}")
+                    .WriteTo.TextWriter(_stringWriter, outputTemplate: "[{Level}] {Message}\n{Exception}")
                     .CreateLogger();
 
                 Logger = new SerilogLoggerFactory(logger).CreateLogger<T>();

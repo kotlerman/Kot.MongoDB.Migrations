@@ -142,368 +142,365 @@ namespace Kot.MongoDB.Migrations.Tests
 
         static class LogStrings
         {
-            public const string NoMigrations = "[Information] Starting migration.\r\n" +
-                "[Debug] Acquiring DB lock.\r\n" +
-                "[Debug] Creating indexes for migrations history collection.\r\n" +
-                "[Debug] Getting current DB version.\r\n" +
-                "[Information] Current DB version is \"0.0.0\".\r\n" +
-                "[Debug] Locating migrations.\r\n" +
-                "[Information] Found 0 migrations.\r\n" +
-                "[Information] The DB is up-to-date.\r\n";
+            public const string NoMigrations = "[Information] Starting migration.\n" +
+                "[Debug] Acquiring DB lock.\n" +
+                "[Debug] Creating indexes for migrations history collection.\n" +
+                "[Debug] Getting current DB version.\n" +
+                "[Information] Current DB version is \"0.0.0\".\n" +
+                "[Debug] Locating migrations.\n" +
+                "[Information] Found 0 migrations.\n" +
+                "[Information] The DB is up-to-date.\n";
 
-            public const string ApplyUpNone = "[Information] Starting migration. Target version is \"0.0.3\".\r\n" +
-                "[Debug] Acquiring DB lock.\r\n" +
-                "[Debug] Creating indexes for migrations history collection.\r\n" +
-                "[Debug] Getting current DB version.\r\n" +
-                "[Information] Current DB version is \"0.0.0\".\r\n" +
-                "[Debug] Locating migrations.\r\n" +
-                "[Information] Found 3 migrations.\r\n" +
-                "[Information] Upgrading the DB with 3 applicable migrations.\r\n" +
-                "[Debug] Applying all migrations without transactions.\r\n" +
-                "[Information] Applying migration \"0.0.1\" (\"0.0.1\").\r\n" +
-                "[Debug] Applying the migration (UP).\r\n" +
-                "[Debug] Migration applied.\r\n" +
-                "[Debug] Writing history entry.\r\n" +
-                "[Debug] History entry saved.\r\n" +
-                "[Information] Applying migration \"0.0.2\" (\"0.0.2\").\r\n" +
-                "[Debug] Applying the migration (UP).\r\n" +
-                "[Debug] Migration applied.\r\n" +
-                "[Debug] Writing history entry.\r\n" +
-                "[Debug] History entry saved.\r\n" +
-                "[Information] Applying migration \"0.0.3\" (\"0.0.3\").\r\n" +
-                "[Debug] Applying the migration (UP).\r\n" +
-                "[Debug] Migration applied.\r\n" +
-                "[Debug] Writing history entry.\r\n" +
-                "[Debug] History entry saved.\r\n" +
-                "[Debug] Verifying DB version after migration.\r\n" +
-                "[Information] The DB was migrated to version \"0.0.3\".\r\n" +
-                "[Debug] Releasing DB lock.\r\n" +
-                "[Debug] DB lock released.\r\n" +
-                "[Information] Migration completed.\r\n";
+            public const string ApplyUpNone = "[Information] Starting migration. Target version is \"0.0.3\".\n" +
+                "[Debug] Acquiring DB lock.\n" +
+                "[Debug] Creating indexes for migrations history collection.\n" +
+                "[Debug] Getting current DB version.\n" +
+                "[Information] Current DB version is \"0.0.0\".\n" +
+                "[Debug] Locating migrations.\n" +
+                "[Information] Found 3 migrations.\n" +
+                "[Information] Upgrading the DB with 3 applicable migrations.\n" +
+                "[Debug] Applying all migrations without transactions.\n" +
+                "[Information] Applying migration \"0.0.1\" (\"0.0.1\").\n" +
+                "[Debug] Applying the migration (UP).\n" +
+                "[Debug] Migration applied.\n" +
+                "[Debug] Writing history entry.\n" +
+                "[Debug] History entry saved.\n" +
+                "[Information] Applying migration \"0.0.2\" (\"0.0.2\").\n" +
+                "[Debug] Applying the migration (UP).\n" +
+                "[Debug] Migration applied.\n" +
+                "[Debug] Writing history entry.\n" +
+                "[Debug] History entry saved.\n" +
+                "[Information] Applying migration \"0.0.3\" (\"0.0.3\").\n" +
+                "[Debug] Applying the migration (UP).\n" +
+                "[Debug] Migration applied.\n" +
+                "[Debug] Writing history entry.\n" +
+                "[Debug] History entry saved.\n" +
+                "[Debug] Verifying DB version after migration.\n" +
+                "[Information] The DB was migrated to version \"0.0.3\".\n" +
+                "[Debug] Releasing DB lock.\n" +
+                "[Debug] DB lock released.\n" +
+                "[Information] Migration completed.\n";
 
-            public const string ApplyUpSingle = "[Information] Starting migration. Target version is \"0.0.3\".\r\n" +
-                "[Debug] Acquiring DB lock.\r\n" +
-                "[Debug] Creating indexes for migrations history collection.\r\n" +
-                "[Debug] Getting current DB version.\r\n" +
-                "[Information] Current DB version is \"0.0.0\".\r\n" +
-                "[Debug] Locating migrations.\r\n" +
-                "[Information] Found 3 migrations.\r\n" +
-                "[Information] Upgrading the DB with 3 applicable migrations.\r\n" +
-                "[Debug] Applying migrations in separate transactions.\r\n" +
-                "[Debug] Starting a transaction for migration \"0.0.1\" (\"0.0.1\").\r\n" +
-                "[Information] Applying migration \"0.0.1\" (\"0.0.1\").\r\n" +
-                "[Debug] Applying the migration (UP).\r\n" +
-                "[Debug] Migration applied.\r\n" +
-                "[Debug] Writing history entry.\r\n" +
-                "[Debug] History entry saved.\r\n" +
-                "[Debug] Commiting the transaction.\r\n" +
-                "[Debug] Starting a transaction for migration \"0.0.2\" (\"0.0.2\").\r\n" +
-                "[Information] Applying migration \"0.0.2\" (\"0.0.2\").\r\n" +
-                "[Debug] Applying the migration (UP).\r\n" +
-                "[Debug] Migration applied.\r\n" +
-                "[Debug] Writing history entry.\r\n" +
-                "[Debug] History entry saved.\r\n" +
-                "[Debug] Commiting the transaction.\r\n" +
-                "[Debug] Starting a transaction for migration \"0.0.3\" (\"0.0.3\").\r\n" +
-                "[Information] Applying migration \"0.0.3\" (\"0.0.3\").\r\n" +
-                "[Debug] Applying the migration (UP).\r\n" +
-                "[Debug] Migration applied.\r\n" +
-                "[Debug] Writing history entry.\r\n" +
-                "[Debug] History entry saved.\r\n" +
-                "[Debug] Commiting the transaction.\r\n" +
-                "[Debug] Verifying DB version after migration.\r\n" +
-                "[Information] The DB was migrated to version \"0.0.3\".\r\n" +
-                "[Debug] Releasing DB lock.\r\n" +
-                "[Debug] DB lock released.\r\n" +
-                "[Information] Migration completed.\r\n";
+            public const string ApplyUpSingle = "[Information] Starting migration. Target version is \"0.0.3\".\n" +
+                "[Debug] Acquiring DB lock.\n" +
+                "[Debug] Creating indexes for migrations history collection.\n" +
+                "[Debug] Getting current DB version.\n" +
+                "[Information] Current DB version is \"0.0.0\".\n" +
+                "[Debug] Locating migrations.\n" +
+                "[Information] Found 3 migrations.\n" +
+                "[Information] Upgrading the DB with 3 applicable migrations.\n" +
+                "[Debug] Applying migrations in separate transactions.\n" +
+                "[Debug] Starting a transaction for migration \"0.0.1\" (\"0.0.1\").\n" +
+                "[Information] Applying migration \"0.0.1\" (\"0.0.1\").\n" +
+                "[Debug] Applying the migration (UP).\n" +
+                "[Debug] Migration applied.\n" +
+                "[Debug] Writing history entry.\n" +
+                "[Debug] History entry saved.\n" +
+                "[Debug] Commiting the transaction.\n" +
+                "[Debug] Starting a transaction for migration \"0.0.2\" (\"0.0.2\").\n" +
+                "[Information] Applying migration \"0.0.2\" (\"0.0.2\").\n" +
+                "[Debug] Applying the migration (UP).\n" +
+                "[Debug] Migration applied.\n" +
+                "[Debug] Writing history entry.\n" +
+                "[Debug] History entry saved.\n" +
+                "[Debug] Commiting the transaction.\n" +
+                "[Debug] Starting a transaction for migration \"0.0.3\" (\"0.0.3\").\n" +
+                "[Information] Applying migration \"0.0.3\" (\"0.0.3\").\n" +
+                "[Debug] Applying the migration (UP).\n" +
+                "[Debug] Migration applied.\n" +
+                "[Debug] Writing history entry.\n" +
+                "[Debug] History entry saved.\n" +
+                "[Debug] Commiting the transaction.\n" +
+                "[Debug] Verifying DB version after migration.\n" +
+                "[Information] The DB was migrated to version \"0.0.3\".\n" +
+                "[Debug] Releasing DB lock.\n" +
+                "[Debug] DB lock released.\n" +
+                "[Information] Migration completed.\n";
 
-            public const string ApplyUpAll = "[Information] Starting migration. Target version is \"0.0.3\".\r\n" +
-                "[Debug] Acquiring DB lock.\r\n" +
-                "[Debug] Creating indexes for migrations history collection.\r\n" +
-                "[Debug] Getting current DB version.\r\n" +
-                "[Information] Current DB version is \"0.0.0\".\r\n" +
-                "[Debug] Locating migrations.\r\n" +
-                "[Information] Found 3 migrations.\r\n" +
-                "[Information] Upgrading the DB with 3 applicable migrations.\r\n" +
-                "[Debug] Applying all migrations in one transaction.\r\n" +
-                "[Debug] Starting a transaction.\r\n" +
-                "[Information] Applying migration \"0.0.1\" (\"0.0.1\").\r\n" +
-                "[Debug] Applying the migration (UP).\r\n" +
-                "[Debug] Migration applied.\r\n" +
-                "[Debug] Writing history entry.\r\n" +
-                "[Debug] History entry saved.\r\n" +
-                "[Information] Applying migration \"0.0.2\" (\"0.0.2\").\r\n" +
-                "[Debug] Applying the migration (UP).\r\n" +
-                "[Debug] Migration applied.\r\n" +
-                "[Debug] Writing history entry.\r\n" +
-                "[Debug] History entry saved.\r\n" +
-                "[Information] Applying migration \"0.0.3\" (\"0.0.3\").\r\n" +
-                "[Debug] Applying the migration (UP).\r\n" +
-                "[Debug] Migration applied.\r\n" +
-                "[Debug] Writing history entry.\r\n" +
-                "[Debug] History entry saved.\r\n" +
-                "[Debug] Commiting the transaction.\r\n" +
-                "[Debug] Verifying DB version after migration.\r\n" +
-                "[Information] The DB was migrated to version \"0.0.3\".\r\n" +
-                "[Debug] Releasing DB lock.\r\n" +
-                "[Debug] DB lock released.\r\n" +
-                "[Information] Migration completed.\r\n";
+            public const string ApplyUpAll = "[Information] Starting migration. Target version is \"0.0.3\".\n" +
+                "[Debug] Acquiring DB lock.\n" +
+                "[Debug] Creating indexes for migrations history collection.\n" +
+                "[Debug] Getting current DB version.\n" +
+                "[Information] Current DB version is \"0.0.0\".\n" +
+                "[Debug] Locating migrations.\n" +
+                "[Information] Found 3 migrations.\n" +
+                "[Information] Upgrading the DB with 3 applicable migrations.\n" +
+                "[Debug] Applying all migrations in one transaction.\n" +
+                "[Debug] Starting a transaction.\n" +
+                "[Information] Applying migration \"0.0.1\" (\"0.0.1\").\n" +
+                "[Debug] Applying the migration (UP).\n" +
+                "[Debug] Migration applied.\n" +
+                "[Debug] Writing history entry.\n" +
+                "[Debug] History entry saved.\n" +
+                "[Information] Applying migration \"0.0.2\" (\"0.0.2\").\n" +
+                "[Debug] Applying the migration (UP).\n" +
+                "[Debug] Migration applied.\n" +
+                "[Debug] Writing history entry.\n" +
+                "[Debug] History entry saved.\n" +
+                "[Information] Applying migration \"0.0.3\" (\"0.0.3\").\n" +
+                "[Debug] Applying the migration (UP).\n" +
+                "[Debug] Migration applied.\n" +
+                "[Debug] Writing history entry.\n" +
+                "[Debug] History entry saved.\n" +
+                "[Debug] Commiting the transaction.\n" +
+                "[Debug] Verifying DB version after migration.\n" +
+                "[Information] The DB was migrated to version \"0.0.3\".\n" +
+                "[Debug] Releasing DB lock.\n" +
+                "[Debug] DB lock released.\n" +
+                "[Information] Migration completed.\n";
 
-            public const string ApplyDownNone = "[Information] Starting migration. Target version is \"0.0.1\".\r\n" +
-                "[Debug] Acquiring DB lock.\r\n" +
-                "[Debug] Creating indexes for migrations history collection.\r\n" +
-                "[Debug] Getting current DB version.\r\n" +
-                "[Information] Current DB version is \"0.0.3\".\r\n" +
-                "[Debug] Locating migrations.\r\n" +
-                "[Information] Found 3 migrations.\r\n" +
-                "[Information] Downgrading the DB with 2 applicable migrations.\r\n" +
-                "[Debug] Applying all migrations without transactions.\r\n" +
-                "[Information] Applying migration \"0.0.3\" (\"0.0.3\").\r\n" +
-                "[Debug] Applying the migration (DOWN).\r\n" +
-                "[Debug] Migration applied.\r\n" +
-                "[Debug] Deleting history entry.\r\n" +
-                "[Debug] History entry deleted.\r\n" +
-                "[Information] Applying migration \"0.0.2\" (\"0.0.2\").\r\n" +
-                "[Debug] Applying the migration (DOWN).\r\n" +
-                "[Debug] Migration applied.\r\n" +
-                "[Debug] Deleting history entry.\r\n" +
-                "[Debug] History entry deleted.\r\n" +
-                "[Debug] Verifying DB version after migration.\r\n" +
-                "[Information] The DB was migrated to version \"0.0.1\".\r\n" +
-                "[Debug] Releasing DB lock.\r\n" +
-                "[Debug] DB lock released.\r\n" +
-                "[Information] Migration completed.\r\n";
+            public const string ApplyDownNone = "[Information] Starting migration. Target version is \"0.0.1\".\n" +
+                "[Debug] Acquiring DB lock.\n" +
+                "[Debug] Creating indexes for migrations history collection.\n" +
+                "[Debug] Getting current DB version.\n" +
+                "[Information] Current DB version is \"0.0.3\".\n" +
+                "[Debug] Locating migrations.\n" +
+                "[Information] Found 3 migrations.\n" +
+                "[Information] Downgrading the DB with 2 applicable migrations.\n" +
+                "[Debug] Applying all migrations without transactions.\n" +
+                "[Information] Applying migration \"0.0.3\" (\"0.0.3\").\n" +
+                "[Debug] Applying the migration (DOWN).\n" +
+                "[Debug] Migration applied.\n" +
+                "[Debug] Deleting history entry.\n" +
+                "[Debug] History entry deleted.\n" +
+                "[Information] Applying migration \"0.0.2\" (\"0.0.2\").\n" +
+                "[Debug] Applying the migration (DOWN).\n" +
+                "[Debug] Migration applied.\n" +
+                "[Debug] Deleting history entry.\n" +
+                "[Debug] History entry deleted.\n" +
+                "[Debug] Verifying DB version after migration.\n" +
+                "[Information] The DB was migrated to version \"0.0.1\".\n" +
+                "[Debug] Releasing DB lock.\n" +
+                "[Debug] DB lock released.\n" +
+                "[Information] Migration completed.\n";
 
-            public const string ApplyDownSingle = "[Information] Starting migration. Target version is \"0.0.1\".\r\n" +
-                "[Debug] Acquiring DB lock.\r\n" +
-                "[Debug] Creating indexes for migrations history collection.\r\n" +
-                "[Debug] Getting current DB version.\r\n" +
-                "[Information] Current DB version is \"0.0.3\".\r\n" +
-                "[Debug] Locating migrations.\r\n" +
-                "[Information] Found 3 migrations.\r\n" +
-                "[Information] Downgrading the DB with 2 applicable migrations.\r\n" +
-                "[Debug] Applying migrations in separate transactions.\r\n" +
-                "[Debug] Starting a transaction for migration \"0.0.3\" (\"0.0.3\").\r\n" +
-                "[Information] Applying migration \"0.0.3\" (\"0.0.3\").\r\n" +
-                "[Debug] Applying the migration (DOWN).\r\n" +
-                "[Debug] Migration applied.\r\n" +
-                "[Debug] Deleting history entry.\r\n" +
-                "[Debug] History entry deleted.\r\n" +
-                "[Debug] Commiting the transaction.\r\n" +
-                "[Debug] Starting a transaction for migration \"0.0.2\" (\"0.0.2\").\r\n" +
-                "[Information] Applying migration \"0.0.2\" (\"0.0.2\").\r\n" +
-                "[Debug] Applying the migration (DOWN).\r\n" +
-                "[Debug] Migration applied.\r\n" +
-                "[Debug] Deleting history entry.\r\n" +
-                "[Debug] History entry deleted.\r\n" +
-                "[Debug] Commiting the transaction.\r\n" +
-                "[Debug] Verifying DB version after migration.\r\n" +
-                "[Information] The DB was migrated to version \"0.0.1\".\r\n" +
-                "[Debug] Releasing DB lock.\r\n" +
-                "[Debug] DB lock released.\r\n" +
-                "[Information] Migration completed.\r\n";
+            public const string ApplyDownSingle = "[Information] Starting migration. Target version is \"0.0.1\".\n" +
+                "[Debug] Acquiring DB lock.\n" +
+                "[Debug] Creating indexes for migrations history collection.\n" +
+                "[Debug] Getting current DB version.\n" +
+                "[Information] Current DB version is \"0.0.3\".\n" +
+                "[Debug] Locating migrations.\n" +
+                "[Information] Found 3 migrations.\n" +
+                "[Information] Downgrading the DB with 2 applicable migrations.\n" +
+                "[Debug] Applying migrations in separate transactions.\n" +
+                "[Debug] Starting a transaction for migration \"0.0.3\" (\"0.0.3\").\n" +
+                "[Information] Applying migration \"0.0.3\" (\"0.0.3\").\n" +
+                "[Debug] Applying the migration (DOWN).\n" +
+                "[Debug] Migration applied.\n" +
+                "[Debug] Deleting history entry.\n" +
+                "[Debug] History entry deleted.\n" +
+                "[Debug] Commiting the transaction.\n" +
+                "[Debug] Starting a transaction for migration \"0.0.2\" (\"0.0.2\").\n" +
+                "[Information] Applying migration \"0.0.2\" (\"0.0.2\").\n" +
+                "[Debug] Applying the migration (DOWN).\n" +
+                "[Debug] Migration applied.\n" +
+                "[Debug] Deleting history entry.\n" +
+                "[Debug] History entry deleted.\n" +
+                "[Debug] Commiting the transaction.\n" +
+                "[Debug] Verifying DB version after migration.\n" +
+                "[Information] The DB was migrated to version \"0.0.1\".\n" +
+                "[Debug] Releasing DB lock.\n" +
+                "[Debug] DB lock released.\n" +
+                "[Information] Migration completed.\n";
 
-            public const string ApplyDownAll = "[Information] Starting migration. Target version is \"0.0.1\".\r\n" +
-                "[Debug] Acquiring DB lock.\r\n" +
-                "[Debug] Creating indexes for migrations history collection.\r\n" +
-                "[Debug] Getting current DB version.\r\n" +
-                "[Information] Current DB version is \"0.0.3\".\r\n" +
-                "[Debug] Locating migrations.\r\n" +
-                "[Information] Found 3 migrations.\r\n" +
-                "[Information] Downgrading the DB with 2 applicable migrations.\r\n" +
-                "[Debug] Applying all migrations in one transaction.\r\n" +
-                "[Debug] Starting a transaction.\r\n" +
-                "[Information] Applying migration \"0.0.3\" (\"0.0.3\").\r\n" +
-                "[Debug] Applying the migration (DOWN).\r\n" +
-                "[Debug] Migration applied.\r\n" +
-                "[Debug] Deleting history entry.\r\n" +
-                "[Debug] History entry deleted.\r\n" +
-                "[Information] Applying migration \"0.0.2\" (\"0.0.2\").\r\n" +
-                "[Debug] Applying the migration (DOWN).\r\n" +
-                "[Debug] Migration applied.\r\n" +
-                "[Debug] Deleting history entry.\r\n" +
-                "[Debug] History entry deleted.\r\n" +
-                "[Debug] Commiting the transaction.\r\n" +
-                "[Debug] Verifying DB version after migration.\r\n" +
-                "[Information] The DB was migrated to version \"0.0.1\".\r\n" +
-                "[Debug] Releasing DB lock.\r\n" +
-                "[Debug] DB lock released.\r\n" +
-                "[Information] Migration completed.\r\n";
+            public const string ApplyDownAll = "[Information] Starting migration. Target version is \"0.0.1\".\n" +
+                "[Debug] Acquiring DB lock.\n" +
+                "[Debug] Creating indexes for migrations history collection.\n" +
+                "[Debug] Getting current DB version.\n" +
+                "[Information] Current DB version is \"0.0.3\".\n" +
+                "[Debug] Locating migrations.\n" +
+                "[Information] Found 3 migrations.\n" +
+                "[Information] Downgrading the DB with 2 applicable migrations.\n" +
+                "[Debug] Applying all migrations in one transaction.\n" +
+                "[Debug] Starting a transaction.\n" +
+                "[Information] Applying migration \"0.0.3\" (\"0.0.3\").\n" +
+                "[Debug] Applying the migration (DOWN).\n" +
+                "[Debug] Migration applied.\n" +
+                "[Debug] Deleting history entry.\n" +
+                "[Debug] History entry deleted.\n" +
+                "[Information] Applying migration \"0.0.2\" (\"0.0.2\").\n" +
+                "[Debug] Applying the migration (DOWN).\n" +
+                "[Debug] Migration applied.\n" +
+                "[Debug] Deleting history entry.\n" +
+                "[Debug] History entry deleted.\n" +
+                "[Debug] Commiting the transaction.\n" +
+                "[Debug] Verifying DB version after migration.\n" +
+                "[Information] The DB was migrated to version \"0.0.1\".\n" +
+                "[Debug] Releasing DB lock.\n" +
+                "[Debug] DB lock released.\n" +
+                "[Information] Migration completed.\n";
 
-            public const string TargetVersionEqualsCurrent = "[Information] Starting migration. Target version is \"0.0.1\".\r\n" +
-                "[Debug] Acquiring DB lock.\r\n" +
-                "[Debug] Creating indexes for migrations history collection.\r\n" +
-                "[Debug] Getting current DB version.\r\n" +
-                "[Information] Current DB version is \"0.0.1\".\r\n" +
-                "[Debug] Locating migrations.\r\n" +
-                "[Information] Found 1 migrations.\r\n" +
-                "[Information] The DB is up-to-date.\r\n";
+            public const string TargetVersionEqualsCurrent = "[Information] Starting migration. Target version is \"0.0.1\".\n" +
+                "[Debug] Acquiring DB lock.\n" +
+                "[Debug] Creating indexes for migrations history collection.\n" +
+                "[Debug] Getting current DB version.\n" +
+                "[Information] Current DB version is \"0.0.1\".\n" +
+                "[Debug] Locating migrations.\n" +
+                "[Information] Found 1 migrations.\n" +
+                "[Information] The DB is up-to-date.\n";
 
-            public const string FirstMigrationAlreadyApplied = "[Information] Starting migration.\r\n" +
-                "[Debug] Acquiring DB lock.\r\n" +
-                "[Debug] Creating indexes for migrations history collection.\r\n" +
-                "[Debug] Getting current DB version.\r\n" +
-                "[Information] Current DB version is \"0.0.1\".\r\n" +
-                "[Debug] Locating migrations.\r\n" +
-                "[Information] Found 2 migrations.\r\n" +
-                "[Information] Upgrading the DB with 1 applicable migrations.\r\n" +
-                "[Debug] Applying all migrations without transactions.\r\n" +
-                "[Information] Applying migration \"0.0.2\" (\"0.0.2\").\r\n" +
-                "[Debug] Applying the migration (UP).\r\n" +
-                "[Debug] Migration applied.\r\n" +
-                "[Debug] Writing history entry.\r\n" +
-                "[Debug] History entry saved.\r\n" +
-                "[Debug] Verifying DB version after migration.\r\n" +
-                "[Information] The DB was migrated to version \"0.0.2\".\r\n" +
-                "[Debug] Releasing DB lock.\r\n" +
-                "[Debug] DB lock released.\r\n" +
-                "[Information] Migration completed.\r\n";
+            public const string FirstMigrationAlreadyApplied = "[Information] Starting migration.\n" +
+                "[Debug] Acquiring DB lock.\n" +
+                "[Debug] Creating indexes for migrations history collection.\n" +
+                "[Debug] Getting current DB version.\n" +
+                "[Information] Current DB version is \"0.0.1\".\n" +
+                "[Debug] Locating migrations.\n" +
+                "[Information] Found 2 migrations.\n" +
+                "[Information] Upgrading the DB with 1 applicable migrations.\n" +
+                "[Debug] Applying all migrations without transactions.\n" +
+                "[Information] Applying migration \"0.0.2\" (\"0.0.2\").\n" +
+                "[Debug] Applying the migration (UP).\n" +
+                "[Debug] Migration applied.\n" +
+                "[Debug] Writing history entry.\n" +
+                "[Debug] History entry saved.\n" +
+                "[Debug] Verifying DB version after migration.\n" +
+                "[Information] The DB was migrated to version \"0.0.2\".\n" +
+                "[Debug] Releasing DB lock.\n" +
+                "[Debug] DB lock released.\n" +
+                "[Information] Migration completed.\n";
 
-            public const string RollbackLastMigration = "[Information] Starting migration. Target version is \"0.0.1\".\r\n" +
-                "[Debug] Acquiring DB lock.\r\n" +
-                "[Debug] Creating indexes for migrations history collection.\r\n" +
-                "[Debug] Getting current DB version.\r\n" +
-                "[Information] Current DB version is \"0.0.2\".\r\n" +
-                "[Debug] Locating migrations.\r\n" +
-                "[Information] Found 2 migrations.\r\n" +
-                "[Information] Downgrading the DB with 1 applicable migrations.\r\n" +
-                "[Debug] Applying all migrations without transactions.\r\n" +
-                "[Information] Applying migration \"0.0.2\" (\"0.0.2\").\r\n" +
-                "[Debug] Applying the migration (DOWN).\r\n" +
-                "[Debug] Migration applied.\r\n" +
-                "[Debug] Deleting history entry.\r\n" +
-                "[Debug] History entry deleted.\r\n" +
-                "[Debug] Verifying DB version after migration.\r\n" +
-                "[Information] The DB was migrated to version \"0.0.1\".\r\n" +
-                "[Debug] Releasing DB lock.\r\n" +
-                "[Debug] DB lock released.\r\n" +
-                "[Information] Migration completed.\r\n";
+            public const string RollbackLastMigration = "[Information] Starting migration. Target version is \"0.0.1\".\n" +
+                "[Debug] Acquiring DB lock.\n" +
+                "[Debug] Creating indexes for migrations history collection.\n" +
+                "[Debug] Getting current DB version.\n" +
+                "[Information] Current DB version is \"0.0.2\".\n" +
+                "[Debug] Locating migrations.\n" +
+                "[Information] Found 2 migrations.\n" +
+                "[Information] Downgrading the DB with 1 applicable migrations.\n" +
+                "[Debug] Applying all migrations without transactions.\n" +
+                "[Information] Applying migration \"0.0.2\" (\"0.0.2\").\n" +
+                "[Debug] Applying the migration (DOWN).\n" +
+                "[Debug] Migration applied.\n" +
+                "[Debug] Deleting history entry.\n" +
+                "[Debug] History entry deleted.\n" +
+                "[Debug] Verifying DB version after migration.\n" +
+                "[Information] The DB was migrated to version \"0.0.1\".\n" +
+                "[Debug] Releasing DB lock.\n" +
+                "[Debug] DB lock released.\n" +
+                "[Information] Migration completed.\n";
 
-            public const string MigrationExceptionNone = "[Information] Starting migration.\r\n" +
-                "[Debug] Acquiring DB lock.\r\n" +
-                "[Debug] Creating indexes for migrations history collection.\r\n" +
-                "[Debug] Getting current DB version.\r\n" +
-                "[Information] Current DB version is \"0.0.0\".\r\n" +
-                "[Debug] Locating migrations.\r\n" +
-                "[Information] Found 1 migrations.\r\n" +
-                "[Information] Upgrading the DB with 1 applicable migrations.\r\n" +
-                "[Debug] Applying all migrations without transactions.\r\n" +
-                "[Information] Applying migration \"0.0.1\" (\"0.0.1\").\r\n" +
-                "[Debug] Applying the migration (UP).\r\n";
+            public const string MigrationExceptionNone = "[Information] Starting migration.\n" +
+                "[Debug] Acquiring DB lock.\n" +
+                "[Debug] Creating indexes for migrations history collection.\n" +
+                "[Debug] Getting current DB version.\n" +
+                "[Information] Current DB version is \"0.0.0\".\n" +
+                "[Debug] Locating migrations.\n" +
+                "[Information] Found 1 migrations.\n" +
+                "[Information] Upgrading the DB with 1 applicable migrations.\n" +
+                "[Debug] Applying all migrations without transactions.\n" +
+                "[Information] Applying migration \"0.0.1\" (\"0.0.1\").\n" +
+                "[Debug] Applying the migration (UP).\n";
 
-            public const string MigrationExceptionSingle = "[Information] Starting migration.\r\n" +
-                "[Debug] Acquiring DB lock.\r\n" +
-                "[Debug] Creating indexes for migrations history collection.\r\n" +
-                "[Debug] Getting current DB version.\r\n" +
-                "[Information] Current DB version is \"0.0.0\".\r\n" +
-                "[Debug] Locating migrations.\r\n" +
-                "[Information] Found 2 migrations.\r\n" +
-                "[Information] Upgrading the DB with 2 applicable migrations.\r\n" +
-                "[Debug] Applying migrations in separate transactions.\r\n" +
-                "[Debug] Starting a transaction for migration \"0.0.1\" (\"0.0.1\").\r\n" +
-                "[Information] Applying migration \"0.0.1\" (\"0.0.1\").\r\n" +
-                "[Debug] Applying the migration (UP).\r\n" +
-                "[Debug] Migration applied.\r\n" +
-                "[Debug] Writing history entry.\r\n" +
-                "[Debug] History entry saved.\r\n" +
-                "[Debug] Commiting the transaction.\r\n" +
-                "[Debug] Starting a transaction for migration \"0.0.2\" (\"0.0.2\").\r\n" +
-                "[Information] Applying migration \"0.0.2\" (\"0.0.2\").\r\n" +
-                "[Debug] Applying the migration (UP).\r\n" +
-                "[Debug] There was an error while applying the migration. Aborting the transaction.\r\n" +
-                "System.Exception: Exception of type 'System.Exception' was thrown.\r\n" +
-                "*";
+            public const string MigrationExceptionSingle = "[Information] Starting migration.\n" +
+                "[Debug] Acquiring DB lock.\n" +
+                "[Debug] Creating indexes for migrations history collection.\n" +
+                "[Debug] Getting current DB version.\n" +
+                "[Information] Current DB version is \"0.0.0\".\n" +
+                "[Debug] Locating migrations.\n" +
+                "[Information] Found 2 migrations.\n" +
+                "[Information] Upgrading the DB with 2 applicable migrations.\n" +
+                "[Debug] Applying migrations in separate transactions.\n" +
+                "[Debug] Starting a transaction for migration \"0.0.1\" (\"0.0.1\").\n" +
+                "[Information] Applying migration \"0.0.1\" (\"0.0.1\").\n" +
+                "[Debug] Applying the migration (UP).\n" +
+                "[Debug] Migration applied.\n" +
+                "[Debug] Writing history entry.\n" +
+                "[Debug] History entry saved.\n" +
+                "[Debug] Commiting the transaction.\n" +
+                "[Debug] Starting a transaction for migration \"0.0.2\" (\"0.0.2\").\n" +
+                "[Information] Applying migration \"0.0.2\" (\"0.0.2\").\n" +
+                "[Debug] Applying the migration (UP).\n" +
+                "[Debug] There was an error while applying the migration. Aborting the transaction.\n" +
+                "System.Exception: Exception of type 'System.Exception' was thrown.*";
 
-            public const string MigrationExceptionAllUp = "[Information] Starting migration.\r\n" +
-                "[Debug] Acquiring DB lock.\r\n" +
-                "[Debug] Creating indexes for migrations history collection.\r\n" +
-                "[Debug] Getting current DB version.\r\n" +
-                "[Information] Current DB version is \"0.0.0\".\r\n" +
-                "[Debug] Locating migrations.\r\n" +
-                "[Information] Found 2 migrations.\r\n" +
-                "[Information] Upgrading the DB with 2 applicable migrations.\r\n" +
-                "[Debug] Applying all migrations in one transaction.\r\n" +
-                "[Debug] Starting a transaction.\r\n" +
-                "[Information] Applying migration \"0.0.1\" (\"0.0.1\").\r\n" +
-                "[Debug] Applying the migration (UP).\r\n" +
-                "[Debug] Migration applied.\r\n" +
-                "[Debug] Writing history entry.\r\n" +
-                "[Debug] History entry saved.\r\n" +
-                "[Information] Applying migration \"0.0.2\" (\"0.0.2\").\r\n" +
-                "[Debug] Applying the migration (UP).\r\n" +
-                "[Debug] There was an error while applying the migrations. Aborting the transaction.\r\n" +
-                "System.Exception: Exception of type 'System.Exception' was thrown.\r\n" +
-                "*";
+            public const string MigrationExceptionAllUp = "[Information] Starting migration.\n" +
+                "[Debug] Acquiring DB lock.\n" +
+                "[Debug] Creating indexes for migrations history collection.\n" +
+                "[Debug] Getting current DB version.\n" +
+                "[Information] Current DB version is \"0.0.0\".\n" +
+                "[Debug] Locating migrations.\n" +
+                "[Information] Found 2 migrations.\n" +
+                "[Information] Upgrading the DB with 2 applicable migrations.\n" +
+                "[Debug] Applying all migrations in one transaction.\n" +
+                "[Debug] Starting a transaction.\n" +
+                "[Information] Applying migration \"0.0.1\" (\"0.0.1\").\n" +
+                "[Debug] Applying the migration (UP).\n" +
+                "[Debug] Migration applied.\n" +
+                "[Debug] Writing history entry.\n" +
+                "[Debug] History entry saved.\n" +
+                "[Information] Applying migration \"0.0.2\" (\"0.0.2\").\n" +
+                "[Debug] Applying the migration (UP).\n" +
+                "[Debug] There was an error while applying the migrations. Aborting the transaction.\n" +
+                "System.Exception: Exception of type 'System.Exception' was thrown.*";
 
-            public const string MigrationExceptionAllDown = "[Information] Starting migration. Target version is \"0.0.0\".\r\n" +
-                "[Debug] Acquiring DB lock.\r\n" +
-                "[Debug] Creating indexes for migrations history collection.\r\n" +
-                "[Debug] Getting current DB version.\r\n" +
-                "[Information] Current DB version is \"0.0.2\".\r\n" +
-                "[Debug] Locating migrations.\r\n" +
-                "[Information] Found 2 migrations.\r\n" +
-                "[Information] Downgrading the DB with 2 applicable migrations.\r\n" +
-                "[Debug] Applying all migrations in one transaction.\r\n" +
-                "[Debug] Starting a transaction.\r\n" +
-                "[Information] Applying migration \"0.0.2\" (\"0.0.2\").\r\n" +
-                "[Debug] Applying the migration (DOWN).\r\n" +
-                "[Debug] Migration applied.\r\n" +
-                "[Debug] Deleting history entry.\r\n" +
-                "[Debug] History entry deleted.\r\n" +
-                "[Information] Applying migration \"0.0.1\" (\"0.0.1\").\r\n" +
-                "[Debug] Applying the migration (DOWN).\r\n" +
-                "[Debug] There was an error while applying the migrations. Aborting the transaction.\r\n" +
-                "System.Exception: Exception of type 'System.Exception' was thrown.\r\n" +
-                "*";
+            public const string MigrationExceptionAllDown = "[Information] Starting migration. Target version is \"0.0.0\".\n" +
+                "[Debug] Acquiring DB lock.\n" +
+                "[Debug] Creating indexes for migrations history collection.\n" +
+                "[Debug] Getting current DB version.\n" +
+                "[Information] Current DB version is \"0.0.2\".\n" +
+                "[Debug] Locating migrations.\n" +
+                "[Information] Found 2 migrations.\n" +
+                "[Information] Downgrading the DB with 2 applicable migrations.\n" +
+                "[Debug] Applying all migrations in one transaction.\n" +
+                "[Debug] Starting a transaction.\n" +
+                "[Information] Applying migration \"0.0.2\" (\"0.0.2\").\n" +
+                "[Debug] Applying the migration (DOWN).\n" +
+                "[Debug] Migration applied.\n" +
+                "[Debug] Deleting history entry.\n" +
+                "[Debug] History entry deleted.\n" +
+                "[Information] Applying migration \"0.0.1\" (\"0.0.1\").\n" +
+                "[Debug] Applying the migration (DOWN).\n" +
+                "[Debug] There was an error while applying the migrations. Aborting the transaction.\n" +
+                "System.Exception: Exception of type 'System.Exception' was thrown.*";
 
-            public const string IndexExists = "[Information] Starting migration.\r\n" +
-                "[Debug] Acquiring DB lock.\r\n" +
-                "[Debug] Creating indexes for migrations history collection.\r\n" +
-                "[Debug] Getting current DB version.\r\n" +
-                "[Information] Current DB version is \"0.0.0\".\r\n" +
-                "[Debug] Locating migrations.\r\n" +
-                "[Information] Found 0 migrations.\r\n" +
-                "[Information] The DB is up-to-date.\r\n";
+            public const string IndexExists = "[Information] Starting migration.\n" +
+                "[Debug] Acquiring DB lock.\n" +
+                "[Debug] Creating indexes for migrations history collection.\n" +
+                "[Debug] Getting current DB version.\n" +
+                "[Information] Current DB version is \"0.0.0\".\n" +
+                "[Debug] Locating migrations.\n" +
+                "[Information] Found 0 migrations.\n" +
+                "[Information] The DB is up-to-date.\n";
 
-            public const string OtherMigrationInProgressCancel = "[Information] Starting migration.\r\n" +
-                "[Debug] Acquiring DB lock.\r\n" +
-                "[Debug] Failed to acquire DB lock.\r\n" +
-                "[Information] Other migration in progress detected. Cancelling current run.\r\n";
+            public const string OtherMigrationInProgressCancel = "[Information] Starting migration.\n" +
+                "[Debug] Acquiring DB lock.\n" +
+                "[Debug] Failed to acquire DB lock.\n" +
+                "[Information] Other migration in progress detected. Cancelling current run.\n";
 
-            public const string OtherMigrationInProgressThrow = "[Information] Starting migration.\r\n" +
-                "[Debug] Acquiring DB lock.\r\n" +
-                "[Debug] Failed to acquire DB lock.\r\n" +
-                "[Error] Other migration in progress detected.\r\n";
+            public const string OtherMigrationInProgressThrow = "[Information] Starting migration.\n" +
+                "[Debug] Acquiring DB lock.\n" +
+                "[Debug] Failed to acquire DB lock.\n" +
+                "[Error] Other migration in progress detected.\n";
 
-            public const string ParallelMigrationsA = "[Information] Starting migration.\r\n" +
-                "[Debug] Acquiring DB lock.\r\n" +
-                "[Debug] Creating indexes for migrations history collection.\r\n" +
-                "[Debug] Getting current DB version.\r\n" +
-                "[Information] Current DB version is \"0.0.0\".\r\n" +
-                "[Debug] Locating migrations.\r\n" +
-                "[Information] Found 1 migrations.\r\n" +
-                "[Information] Upgrading the DB with 1 applicable migrations.\r\n" +
-                "[Debug] Applying all migrations without transactions.\r\n" +
-                "[Information] Applying migration \"0.0.1\" (\"0.0.1\").\r\n" +
-                "[Debug] Applying the migration (UP).\r\n" +
-                "[Debug] Migration applied.\r\n" +
-                "[Debug] Writing history entry.\r\n" +
-                "[Debug] History entry saved.\r\n" +
-                "[Debug] Verifying DB version after migration.\r\n" +
-                "[Information] The DB was migrated to version \"0.0.1\".\r\n" +
-                "[Debug] Releasing DB lock.\r\n" +
-                "[Debug] DB lock released.\r\n" +
-                "[Information] Migration completed.\r\n";
+            public const string ParallelMigrationsA = "[Information] Starting migration.\n" +
+                "[Debug] Acquiring DB lock.\n" +
+                "[Debug] Creating indexes for migrations history collection.\n" +
+                "[Debug] Getting current DB version.\n" +
+                "[Information] Current DB version is \"0.0.0\".\n" +
+                "[Debug] Locating migrations.\n" +
+                "[Information] Found 1 migrations.\n" +
+                "[Information] Upgrading the DB with 1 applicable migrations.\n" +
+                "[Debug] Applying all migrations without transactions.\n" +
+                "[Information] Applying migration \"0.0.1\" (\"0.0.1\").\n" +
+                "[Debug] Applying the migration (UP).\n" +
+                "[Debug] Migration applied.\n" +
+                "[Debug] Writing history entry.\n" +
+                "[Debug] History entry saved.\n" +
+                "[Debug] Verifying DB version after migration.\n" +
+                "[Information] The DB was migrated to version \"0.0.1\".\n" +
+                "[Debug] Releasing DB lock.\n" +
+                "[Debug] DB lock released.\n" +
+                "[Information] Migration completed.\n";
 
-            public const string ParallelMigrationsCancelB = "[Information] Starting migration.\r\n" +
-                "[Debug] Acquiring DB lock.\r\n" +
-                "[Debug] Failed to acquire DB lock.\r\n" +
-                "[Information] Other migration in progress detected. Cancelling current run.\r\n";
+            public const string ParallelMigrationsCancelB = "[Information] Starting migration.\n" +
+                "[Debug] Acquiring DB lock.\n" +
+                "[Debug] Failed to acquire DB lock.\n" +
+                "[Information] Other migration in progress detected. Cancelling current run.\n";
 
-            public const string ParallelMigrationsThrowB = "[Information] Starting migration.\r\n" +
-                "[Debug] Acquiring DB lock.\r\n" +
-                "[Debug] Failed to acquire DB lock.\r\n" +
-                "[Error] Other migration in progress detected.\r\n";
+            public const string ParallelMigrationsThrowB = "[Information] Starting migration.\n" +
+                "[Debug] Acquiring DB lock.\n" +
+                "[Debug] Failed to acquire DB lock.\n" +
+                "[Error] Other migration in progress detected.\n";
         }
     }
 }
