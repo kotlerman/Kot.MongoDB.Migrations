@@ -2,8 +2,8 @@ using FluentAssertions;
 using Kot.MongoDB.Migrations.Exceptions;
 using Kot.MongoDB.Migrations.Locators;
 using Kot.MongoDB.Migrations.Tests.Extensions;
+using Kot.MongoDB.Migrations.Tests.Util;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Logging.Abstractions;
 using Mongo2Go;
 using MongoDB.Bson;
 using MongoDB.Bson.Serialization.Attributes;
@@ -55,10 +55,11 @@ namespace Kot.MongoDB.Migrations.Tests
         }
 
         [TestCaseSource(typeof(MigratorTestCases), nameof(MigratorTestCases.NoMigrations))]
-        public async Task NoMigrations(bool withLogger)
+        public async Task NoMigrations(bool withLogger, string expectedLog)
         {
             // Arrange
-            var migrator = SetupMigrator(Enumerable.Empty<IMongoMigration>(), TransactionScope.None, withLogger);
+            var loggerWrapper = new LoggerWrapper<Migrator>(withLogger);
+            var migrator = SetupMigrator(Enumerable.Empty<IMongoMigration>(), TransactionScope.None, loggerWrapper.Logger);
             var expectedResult = new MigrationResult
             {
                 Type = MigrationResultType.UpToDate,
@@ -79,10 +80,11 @@ namespace Kot.MongoDB.Migrations.Tests
             historyRecordsCount.Should().Be(0);
             collectionNames.Should().ContainSingle(x => x == MigrationsCollectionName);
             VerifyMigrationResult(actualResult, expectedResult);
+            loggerWrapper.GetLogString().Should().Be(expectedLog);
         }
 
         [TestCaseSource(typeof(MigratorTestCases), nameof(MigratorTestCases.ApplyUp))]
-        public async Task ApplyUp(TransactionScope transactionScope, bool withLogger)
+        public async Task ApplyUp(TransactionScope transactionScope, bool withLogger, string expectedLog)
         {
             // Arrange
             var migrations = new IMongoMigration[]
@@ -100,7 +102,8 @@ namespace Kot.MongoDB.Migrations.Tests
                 StartTime = DateTime.Now,
                 FinishTime = DateTime.Now
             };
-            var migrator = SetupMigrator(migrations, transactionScope, withLogger);
+            var loggerWrapper = new LoggerWrapper<Migrator>(withLogger);
+            var migrator = SetupMigrator(migrations, transactionScope, loggerWrapper.Logger);
 
             var expectedHistoryDocs = migrations
                 .Select(x => new MigrationHistory { Name = x.Name, Version = x.Version, AppliedAt = DateTime.Now })
@@ -126,10 +129,11 @@ namespace Kot.MongoDB.Migrations.Tests
                 .And.BeEquivalentTo(expectedTestDocs);
 
             VerifyMigrationResult(actualResult, expectedResult);
+            loggerWrapper.GetLogString().Should().Be(expectedLog);
         }
 
         [TestCaseSource(typeof(MigratorTestCases), nameof(MigratorTestCases.ApplyDown))]
-        public async Task ApplyDown(TransactionScope transactionScope, bool withLogger)
+        public async Task ApplyDown(TransactionScope transactionScope, bool withLogger, string expectedLog)
         {
             // Arrange
             var migrations = new IMongoMigration[]
@@ -147,7 +151,8 @@ namespace Kot.MongoDB.Migrations.Tests
                 StartTime = DateTime.Now,
                 FinishTime = DateTime.Now
             };
-            var migrator = SetupMigrator(migrations, transactionScope, withLogger);
+            var loggerWrapper = new LoggerWrapper<Migrator>(withLogger);
+            var migrator = SetupMigrator(migrations, transactionScope, loggerWrapper.Logger);
 
             var testDocs = migrations
                 .Select(x => new TestDoc { Version = x.Version.ToString() })
@@ -176,10 +181,11 @@ namespace Kot.MongoDB.Migrations.Tests
                 .And.ContainEquivalentOf(testDocs[0]);
 
             VerifyMigrationResult(actualResult, expectedResult);
+            loggerWrapper.GetLogString().Should().Be(expectedLog);
         }
 
         [TestCaseSource(typeof(MigratorTestCases), nameof(MigratorTestCases.TargetVersionEqualsCurrent))]
-        public async Task TargetVersionEqualsCurrent(bool withLogger)
+        public async Task TargetVersionEqualsCurrent(bool withLogger, string expectedLog)
         {
             // Arrange
             var migrations = new IMongoMigration[]
@@ -194,7 +200,8 @@ namespace Kot.MongoDB.Migrations.Tests
                 StartTime = DateTime.Now,
                 FinishTime = DateTime.Now
             };
-            var migrator = SetupMigrator(migrations, TransactionScope.None, withLogger);
+            var loggerWrapper = new LoggerWrapper<Migrator>(withLogger);
+            var migrator = SetupMigrator(migrations, TransactionScope.None, loggerWrapper.Logger);
 
             var historyDoc = new MigrationHistory
             {
@@ -218,10 +225,11 @@ namespace Kot.MongoDB.Migrations.Tests
             actualTestDocs.Should().BeEmpty();
 
             VerifyMigrationResult(actualResult, expectedResult);
+            loggerWrapper.GetLogString().Should().Be(expectedLog);
         }
 
         [TestCaseSource(typeof(MigratorTestCases), nameof(MigratorTestCases.FirstMigrationAlreadyApplied))]
-        public async Task FirstMigrationAlreadyApplied(bool withLogger)
+        public async Task FirstMigrationAlreadyApplied(bool withLogger, string expectedLog)
         {
             // Arrange
             var migrations = new IMongoMigration[]
@@ -249,7 +257,8 @@ namespace Kot.MongoDB.Migrations.Tests
 
             await _histCollection.InsertOneAsync(historyDoc);
 
-            var migrator = SetupMigrator(migrations, TransactionScope.None, withLogger);
+            var loggerWrapper = new LoggerWrapper<Migrator>(withLogger);
+            var migrator = SetupMigrator(migrations, TransactionScope.None, loggerWrapper.Logger);
 
             var expectedHistoryDocs = migrations
                 .Select(x => new MigrationHistory { Name = x.Name, Version = x.Version, AppliedAt = DateTime.Now })
@@ -266,10 +275,11 @@ namespace Kot.MongoDB.Migrations.Tests
                     opt => opt.Excluding(x => x.Id).UsingNonStrictDateTimeComparison());
 
             VerifyMigrationResult(actualResult, expectedResult);
+            loggerWrapper.GetLogString().Should().Be(expectedLog);
         }
 
         [TestCaseSource(typeof(MigratorTestCases), nameof(MigratorTestCases.RollbackLastMigration))]
-        public async Task RollbackLastMigration(bool withLogger)
+        public async Task RollbackLastMigration(bool withLogger, string expectedLog)
         {
             // Arrange
             var migrations = new IMongoMigration[]
@@ -294,7 +304,8 @@ namespace Kot.MongoDB.Migrations.Tests
 
             await _histCollection.InsertManyAsync(historyDocs);
 
-            var migrator = SetupMigrator(migrations, TransactionScope.None, withLogger);
+            var loggerWrapper = new LoggerWrapper<Migrator>(withLogger);
+            var migrator = SetupMigrator(migrations, TransactionScope.None, loggerWrapper.Logger);
 
             var expectedHistoryDocs = new List<MigrationHistory>
             {
@@ -317,17 +328,19 @@ namespace Kot.MongoDB.Migrations.Tests
                     opt => opt.Excluding(x => x.Id).UsingNonStrictDateTimeComparison());
 
             VerifyMigrationResult(actualResult, expectedResult);
+            loggerWrapper.GetLogString().Should().Be(expectedLog);
         }
 
         [TestCaseSource(typeof(MigratorTestCases), nameof(MigratorTestCases.MigrationException_NoTransaction))]
-        public async Task MigrationException_NoTransaction(bool withLogger)
+        public async Task MigrationException_NoTransaction(bool withLogger, string expectedLog)
         {
             // Arrange
             var migrations = new IMongoMigration[]
             {
                 new MigratorTest_MigrationExc("0.0.1")
             };
-            var migrator = SetupMigrator(migrations, TransactionScope.None, withLogger);
+            var loggerWrapper = new LoggerWrapper<Migrator>(withLogger);
+            var migrator = SetupMigrator(migrations, TransactionScope.None, loggerWrapper.Logger);
 
             // Act
             Func<Task> migrateFunc = async () => await migrator.MigrateAsync();
@@ -340,10 +353,11 @@ namespace Kot.MongoDB.Migrations.Tests
 
             actualHistoryDocs.Should().BeEmpty();
             actualTestDocs.Should().BeEmpty();
+            loggerWrapper.GetLogString().Should().Be(expectedLog);
         }
 
         [TestCaseSource(typeof(MigratorTestCases), nameof(MigratorTestCases.MigrationException_SingleMigrationTransaction))]
-        public async Task MigrationException_SingleMigrationTransaction(bool withLogger)
+        public async Task MigrationException_SingleMigrationTransaction(bool withLogger, string expectedLog)
         {
             // Arrange
             var migrations = new IMongoMigration[]
@@ -351,7 +365,8 @@ namespace Kot.MongoDB.Migrations.Tests
                 new MigratorTest_Migration("0.0.1"),
                 new MigratorTest_MigrationExc("0.0.2")
             };
-            var migrator = SetupMigrator(migrations, TransactionScope.SingleMigration, withLogger);
+            var loggerWrapper = new LoggerWrapper<Migrator>(withLogger);
+            var migrator = SetupMigrator(migrations, TransactionScope.SingleMigration, loggerWrapper.Logger);
 
             // Act
             Func<Task> migrateFunc = async () => await migrator.MigrateAsync();
@@ -367,10 +382,19 @@ namespace Kot.MongoDB.Migrations.Tests
 
             actualTestDocs.Should().HaveCount(1)
                 .And.Contain(x => x.Version == migrations[0].Version);
+
+            if (withLogger)
+            {
+                loggerWrapper.GetLogString().Should().Match(expectedLog);
+            }
+            else
+            {
+                loggerWrapper.GetLogString().Should().BeNull();
+            }
         }
 
         [TestCaseSource(typeof(MigratorTestCases), nameof(MigratorTestCases.MigrationException_AllMigrationsTransaction_Up))]
-        public async Task MigrationException_AllMigrationsTransaction_Up(bool withLogger)
+        public async Task MigrationException_AllMigrationsTransaction_Up(bool withLogger, string expectedLog)
         {
             // Arrange
             var migrations = new IMongoMigration[]
@@ -378,7 +402,8 @@ namespace Kot.MongoDB.Migrations.Tests
                 new MigratorTest_Migration("0.0.1"),
                 new MigratorTest_MigrationExc("0.0.2")
             };
-            var migrator = SetupMigrator(migrations, TransactionScope.AllMigrations, withLogger);
+            var loggerWrapper = new LoggerWrapper<Migrator>(withLogger);
+            var migrator = SetupMigrator(migrations, TransactionScope.AllMigrations, loggerWrapper.Logger);
 
             // Act
             Func<Task> migrateFunc = async () => await migrator.MigrateAsync();
@@ -391,10 +416,19 @@ namespace Kot.MongoDB.Migrations.Tests
 
             actualHistoryDocs.Should().BeEmpty();
             actualTestDocs.Should().BeEmpty();
+
+            if (withLogger)
+            {
+                loggerWrapper.GetLogString().Should().Match(expectedLog);
+            }
+            else
+            {
+                loggerWrapper.GetLogString().Should().BeNull();
+            }
         }
 
         [TestCaseSource(typeof(MigratorTestCases), nameof(MigratorTestCases.MigrationException_AllMigrationsTransaction_Down))]
-        public async Task MigrationException_AllMigrationsTransaction_Down(bool withLogger)
+        public async Task MigrationException_AllMigrationsTransaction_Down(bool withLogger, string expectedLog)
         {
             // Arrange
             var migrations = new IMongoMigration[]
@@ -415,7 +449,8 @@ namespace Kot.MongoDB.Migrations.Tests
 
             await _histCollection.InsertManyAsync(historyDocs);
 
-            var migrator = SetupMigrator(migrations, TransactionScope.AllMigrations, withLogger);
+            var loggerWrapper = new LoggerWrapper<Migrator>(withLogger);
+            var migrator = SetupMigrator(migrations, TransactionScope.AllMigrations, loggerWrapper.Logger);
 
             // Act
             Func<Task> migrateFunc = async () => await migrator.MigrateAsync("0.0.0");
@@ -433,13 +468,23 @@ namespace Kot.MongoDB.Migrations.Tests
             actualTestDocs.Should()
                 .HaveCount(testDocs.Count)
                 .And.BeEquivalentTo(testDocs);
+
+            if (withLogger)
+            {
+                loggerWrapper.GetLogString().Should().Match(expectedLog);
+            }
+            else
+            {
+                loggerWrapper.GetLogString().Should().BeNull();
+            }
         }
 
         [TestCaseSource(typeof(MigratorTestCases), nameof(MigratorTestCases.IndexExists))]
-        public async Task IndexExists(bool withLogger)
+        public async Task IndexExists(bool withLogger, string expectedLog)
         {
             // Arrange
-            var migrator = SetupMigrator(Enumerable.Empty<IMongoMigration>(), TransactionScope.None, withLogger);
+            var loggerWrapper = new LoggerWrapper<Migrator>(withLogger);
+            var migrator = SetupMigrator(Enumerable.Empty<IMongoMigration>(), TransactionScope.None, loggerWrapper.Logger);
 
             // Act
             await migrator.MigrateAsync();
@@ -455,6 +500,8 @@ namespace Kot.MongoDB.Migrations.Tests
             versionIndexKey[majorKey].Should().Be(1);
             versionIndexKey[minorKey].Should().Be(1);
             versionIndexKey[patchKey].Should().Be(1);
+
+            loggerWrapper.GetLogString().Should().Be(expectedLog);
         }
 
         [Test]
@@ -480,7 +527,7 @@ namespace Kot.MongoDB.Migrations.Tests
         }
 
         [TestCaseSource(typeof(MigratorTestCases), nameof(MigratorTestCases.OtherMigrationInProgress_Cancel))]
-        public async Task OtherMigrationInProgress_Cancel(bool withLogger)
+        public async Task OtherMigrationInProgress_Cancel(bool withLogger, string expectedLog)
         {
             // Arrange
             var migrations = new IMongoMigration[]
@@ -498,7 +545,8 @@ namespace Kot.MongoDB.Migrations.Tests
                 StartTime = DateTime.Now,
                 FinishTime = DateTime.Now
             };
-            var migrator = SetupMigrator(migrations, TransactionScope.None, withLogger, ParallelRunsBehavior.Cancel);
+            var loggerWrapper = new LoggerWrapper<Migrator>(withLogger);
+            var migrator = SetupMigrator(migrations, TransactionScope.None, loggerWrapper.Logger, ParallelRunsBehavior.Cancel);
             var lockDoc = new MigrationLock { AcquiredAt = new DateTime(2023, 1, 1, 0, 0, 0, DateTimeKind.Utc) };
             await _lockCollection.InsertOneAsync(lockDoc);
 
@@ -514,10 +562,11 @@ namespace Kot.MongoDB.Migrations.Tests
             actualTestDocs.Should().BeEmpty();
             actualLockDoc.AcquiredAt.Should().Be(lockDoc.AcquiredAt);
             VerifyMigrationResult(actualResult, expectedResult);
+            loggerWrapper.GetLogString().Should().Be(expectedLog);
         }
 
         [TestCaseSource(typeof(MigratorTestCases), nameof(MigratorTestCases.OtherMigrationInProgress_Throw))]
-        public async Task OtherMigrationInProgress_Throw(bool withLogger)
+        public async Task OtherMigrationInProgress_Throw(bool withLogger, string expectedLog)
         {
             // Arrange
             var migrations = new IMongoMigration[]
@@ -526,7 +575,8 @@ namespace Kot.MongoDB.Migrations.Tests
                 new MigratorTest_Migration("0.0.2"),
                 new MigratorTest_Migration("0.0.3"),
             };
-            var migrator = SetupMigrator(migrations, TransactionScope.None, withLogger, ParallelRunsBehavior.Throw);
+            var loggerWrapper = new LoggerWrapper<Migrator>(withLogger);
+            var migrator = SetupMigrator(migrations, TransactionScope.None, loggerWrapper.Logger, ParallelRunsBehavior.Throw);
             var lockDoc = new MigrationLock { AcquiredAt = new DateTime(2023, 1, 1, 0, 0, 0, DateTimeKind.Utc) };
             await _lockCollection.InsertOneAsync(lockDoc);
 
@@ -543,10 +593,11 @@ namespace Kot.MongoDB.Migrations.Tests
             actualHistoryDocs.Should().BeEmpty();
             actualTestDocs.Should().BeEmpty();
             actualLockDoc.AcquiredAt.Should().Be(lockDoc.AcquiredAt);
+            loggerWrapper.GetLogString().Should().Be(expectedLog);
         }
 
         [TestCaseSource(typeof(MigratorTestCases), nameof(MigratorTestCases.ParallelMigrations_FirstApplied_SecondCancelled))]
-        public async Task ParallelMigrations_FirstApplied_SecondCancelled(bool withLogger)
+        public async Task ParallelMigrations_FirstApplied_SecondCancelled(bool withLogger, string expectedLogA, string expectedLogB)
         {
             // Arrange
             var completionSource = new TaskCompletionSource();
@@ -578,8 +629,11 @@ namespace Kot.MongoDB.Migrations.Tests
                 StartTime = DateTime.Now,
                 FinishTime = DateTime.Now
             };
-            var migratorA = SetupMigrator(migrationsA, TransactionScope.None, withLogger, ParallelRunsBehavior.Cancel);
-            var migratorB = SetupMigrator(migrationsB, TransactionScope.None, withLogger, ParallelRunsBehavior.Cancel);
+            var loggerWrapperA = new LoggerWrapper<Migrator>(withLogger);
+            var migratorA = SetupMigrator(migrationsA, TransactionScope.None, loggerWrapperA.Logger, ParallelRunsBehavior.Cancel);
+
+            var loggerWrapperB = new LoggerWrapper<Migrator>(withLogger);
+            var migratorB = SetupMigrator(migrationsB, TransactionScope.None, loggerWrapperB.Logger, ParallelRunsBehavior.Cancel);
 
             // Act
             Task<MigrationResult> actualResultTaskA = migratorA.MigrateAsync();
@@ -603,10 +657,13 @@ namespace Kot.MongoDB.Migrations.Tests
 
             VerifyMigrationResult(actualResultA, expectedResultA);
             VerifyMigrationResult(actualResultB, expectedResultB);
+
+            loggerWrapperA.GetLogString().Should().Be(expectedLogA);
+            loggerWrapperB.GetLogString().Should().Be(expectedLogB);
         }
 
         [TestCaseSource(typeof(MigratorTestCases), nameof(MigratorTestCases.ParallelMigrations_FirstApplied_SecondThrows))]
-        public async Task ParallelMigrations_FirstApplied_SecondThrows(bool withLogger)
+        public async Task ParallelMigrations_FirstApplied_SecondThrows(bool withLogger, string expectedLogA, string expectedLogB)
         {
             // Arrange
             var completionSource = new TaskCompletionSource();
@@ -629,8 +686,11 @@ namespace Kot.MongoDB.Migrations.Tests
                 StartTime = DateTime.Now,
                 FinishTime = DateTime.Now.AddSeconds(10)
             };
-            var migratorA = SetupMigrator(migrationsA, TransactionScope.None, withLogger, ParallelRunsBehavior.Throw);
-            var migratorB = SetupMigrator(migrationsB, TransactionScope.None, withLogger, ParallelRunsBehavior.Throw);
+            var loggerWrapperA = new LoggerWrapper<Migrator>(withLogger);
+            var migratorA = SetupMigrator(migrationsA, TransactionScope.None, loggerWrapperA.Logger, ParallelRunsBehavior.Throw);
+
+            var loggerWrapperB = new LoggerWrapper<Migrator>(withLogger);
+            var migratorB = SetupMigrator(migrationsB, TransactionScope.None, loggerWrapperB.Logger, ParallelRunsBehavior.Throw);
 
             // Act
             Task<MigrationResult> actualResultTaskA = migratorA.MigrateAsync();
@@ -656,9 +716,12 @@ namespace Kot.MongoDB.Migrations.Tests
             actualLockDoc.Should().BeNull();
 
             VerifyMigrationResult(actualResultA, expectedResultA);
+
+            loggerWrapperA.GetLogString().Should().Be(expectedLogA);
+            loggerWrapperB.GetLogString().Should().Be(expectedLogB);
         }
 
-        private Migrator SetupMigrator(IEnumerable<IMongoMigration> migrations, TransactionScope transactionScope, bool withLogger,
+        private Migrator SetupMigrator(IEnumerable<IMongoMigration> migrations, TransactionScope transactionScope, ILogger<Migrator> logger,
             ParallelRunsBehavior parallelRunsBehavior = ParallelRunsBehavior.Cancel)
         {
             var locatorMock = new Mock<IMigrationsLocator>();
@@ -670,7 +733,6 @@ namespace Kot.MongoDB.Migrations.Tests
                 TransactionScope = transactionScope,
                 ParallelRunsBehavior = parallelRunsBehavior
             };
-            var logger = withLogger ? new NullLogger<Migrator>() : null;
             var migrator = new Migrator(locatorMock.Object, _client, options, logger);
 
             return migrator;
