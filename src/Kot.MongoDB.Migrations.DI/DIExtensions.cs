@@ -1,5 +1,6 @@
 ﻿using Kot.MongoDB.Migrations.Locators;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 using MongoDB.Driver;
 using System;
 
@@ -41,7 +42,10 @@ namespace Kot.MongoDB.Migrations.DI
             ConfigureMigrationsLocation(services, configure);
             services.AddSingleton(options);
             services.AddSingleton<IMigrator>(provider => new Migrator(
-                provider.GetRequiredService<IMigrationsLocator>(), mongoClient, provider.GetRequiredService<MigrationOptions>()));
+                provider.GetRequiredService<IMigrationsLocator>(),
+                mongoClient,
+                provider.GetRequiredService<MigrationOptions>(),
+                provider.GetService<ILogger<Migrator>>()));
             return services;
         }
 

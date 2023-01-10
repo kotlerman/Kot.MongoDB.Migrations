@@ -9,6 +9,7 @@ using Microsoft.Extensions.Logging;
 using Mongo2Go;
 using MongoDB.Driver;
 using NUnit.Framework;
+using Serilog;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -27,6 +28,7 @@ namespace Kot.MongoDB.Migrations.DI.IntegrationTests
         private const string SubfolderNamespace = "Kot.MongoDB.Migrations.DI.IntegrationTests.Migrations.Subfolder";
         private const string ServiceTestValue = "TestValue";
 
+        private StringWriter _logWriter;
         private Assembly _externalMigrationsAssembly;
         private MongoDbRunner _runner;
         private IMongoClient _client;
@@ -43,7 +45,9 @@ namespace Kot.MongoDB.Migrations.DI.IntegrationTests
         [SetUp]
         public void Setup()
         {
-            ILogger logger = LoggerFactory
+            _logWriter = new StringWriter();
+
+            Microsoft.Extensions.Logging.ILogger logger = LoggerFactory
                 .Create(config => config.SetMinimumLevel(LogLevel.Error).AddConsole())
                 .CreateLogger("Mongo2Go");
 
@@ -204,38 +208,86 @@ namespace Kot.MongoDB.Migrations.DI.IntegrationTests
             await MigrateWithConnectionString(config => config.LoadMigrations(migrations), expectedVersions);
         }
 
+        [TestCase(false, TestName = "Migrate_WithSpecificClient_WithoutLogs")]
+        [TestCase(true, TestName = "Migrate_WithSpecificClient_WithLogs")]
+        public async Task Migrate_WithSpecificClient_Logs(bool withLogs)
+        {
+            // Arrange
+            var testService = new TestService() { TestValue = ServiceTestValue };
+
+            // Act
+            await MigrateWithSpecificClient(config => config.LoadMigrations(Array.Empty<IMongoMigration>()), Array.Empty<string>(), withLogs);
+
+            // Assert
+            var expectedLogs = withLogs ? LogStrings.EmptyMigrations : "";
+            _logWriter.ToString().Should().Be(expectedLogs);
+        }
+
+        [TestCase(false, TestName = "Migrate_WithExternalClient_WithoutLogs")]
+        [TestCase(true, TestName = "Migrate_WithExternalClient_WithLogs")]
+        public async Task Migrate_WithExternalClient_Logs(bool withLogs)
+        {
+            // Arrange
+            var testService = new TestService() { TestValue = ServiceTestValue };
+
+            // Act
+            await MigrateWithExternalClient(config => config.LoadMigrations(Array.Empty<IMongoMigration>()), Array.Empty<string>(), withLogs);
+
+            // Assert
+            var expectedLogs = withLogs ? LogStrings.EmptyMigrations : "";
+            _logWriter.ToString().Should().Be(expectedLogs);
+        }
+
+        [TestCase(false, TestName = "Migrate_WithConnectionString_WithoutLogs")]
+        [TestCase(true, TestName = "Migrate_WithConnectionString_WithLogs")]
+        public async Task Migrate_WithConnectionString_Logs(bool withLogs)
+        {
+            // Arrange
+            var testService = new TestService() { TestValue = ServiceTestValue };
+
+            // Act
+            await MigrateWithConnectionString(config => config.LoadMigrations(Array.Empty<IMongoMigration>()), Array.Empty<string>(), withLogs);
+
+            // Assert
+            var expectedLogs = withLogs ? LogStrings.EmptyMigrations : "";
+            _logWriter.ToString().Should().Be(expectedLogs);
+        }
+
         private async Task MigrateWithExternalClient(Action<DIMigrationsLocationConfigurator> configure,
-            IEnumerable<string> expectedVersions)
+            IEnumerable<string> expectedVersions, bool withLogs = true)
         {
             await TestMigration((services, options) =>
             {
                 services.AddSingleton(_client);
                 services.AddMongoMigrations(options, configure);
             },
-            expectedVersions);
+            expectedVersions,
+            withLogs);
         }
 
         private async Task MigrateWithSpecificClient(Action<DIMigrationsLocationConfigurator> configure,
-            IEnumerable<string> expectedVersions)
+            IEnumerable<string> expectedVersions, bool withLogs = true)
         {
             await TestMigration((services, options) =>
             {
                 services.AddMongoMigrations(_client, options, configure);
             },
-            expectedVersions);
+            expectedVersions,
+            withLogs);
         }
 
         private async Task MigrateWithConnectionString(Action<DIMigrationsLocationConfigurator> configure,
-            IEnumerable<string> expectedVersions)
+            IEnumerable<string> expectedVersions, bool withLogs = true)
         {
             await TestMigration((services, options) =>
             {
                 services.AddMongoMigrations(_runner.ConnectionString, options, configure);
             },
-            expectedVersions);
+            expectedVersions,
+            withLogs);
         }
 
-        private async Task TestMigration(Action<IServiceCollection, MigrationOptions> configure, IEnumerable<string> expectedVersions)
+        private async Task TestMigration(Action<IServiceCollection, MigrationOptions> configure, IEnumerable<string> expectedVersions, bool withLogger)
         {
             // Arrange
             var testService = new TestService { TestValue = ServiceTestValue };
@@ -247,8 +299,19 @@ namespace Kot.MongoDB.Migrations.DI.IntegrationTests
                     configure(services, options);
                     services.AddSingleton<ITestService>(testService);
                     services.AddHostedService<HostedService>();
+
+                    if (!withLogger)
+                    {
+                        services.AddSingleton<ILogger<Migrator>>(_ => null);
+                    }
                 })
-                .ConfigureLogging(logging => logging.SetMinimumLevel(LogLevel.Warning))
+                .UseSerilog((_, logging) =>
+                {
+                    logging.MinimumLevel.Debug();
+                    logging.MinimumLevel.Override("Microsoft", Serilog.Events.LogEventLevel.Warning);
+                    logging.MinimumLevel.Override("Microsoft.Hosting.Lifetime", Serilog.Events.LogEventLevel.Warning);
+                    logging.WriteTo.TextWriter(_logWriter, outputTemplate: "[{Level}] {Message}\n{Exception}");
+                })
                 .Build();
 
             // Act
@@ -320,6 +383,18 @@ namespace Kot.MongoDB.Migrations.DI.IntegrationTests
             }
 
             public Task StopAsync(CancellationToken cancellationToken) => Task.CompletedTask;
+        }
+
+        static class LogStrings
+        {
+            public const string EmptyMigrations = "[Information] Starting migration.\n" +
+                "[Debug] Acquiring DB lock.\n" +
+                "[Debug] Creating indexes for migrations history collection.\n" +
+                "[Debug] Getting current DB version.\n" +
+                "[Information] Current DB version is \"0.0.0\".\n" +
+                "[Debug] Locating migrations.\n" +
+                "[Information] Found 0 migrations.\n" +
+                "[Information] The DB is up-to-date.\n";
         }
     }
 }
