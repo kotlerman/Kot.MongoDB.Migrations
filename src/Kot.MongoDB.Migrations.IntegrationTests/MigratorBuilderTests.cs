@@ -8,6 +8,8 @@ using Mongo2Go;
 using MongoDB.Driver;
 using Moq;
 using NUnit.Framework;
+using Serilog.Extensions.Logging;
+using Serilog;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -44,7 +46,7 @@ namespace Kot.MongoDB.Migrations.IntegrationTests
         [SetUp]
         public void SetUp()
         {
-            ILogger logger = LoggerFactory
+            Microsoft.Extensions.Logging.ILogger logger = LoggerFactory
                 .Create(config => config.SetMinimumLevel(LogLevel.Error).AddConsole())
                 .CreateLogger("Mongo2Go");
 
@@ -211,6 +213,42 @@ namespace Kot.MongoDB.Migrations.IntegrationTests
 
             // Act & Assert
             await TestMigration(migrator, expectedVersions);
+        }
+
+        [TestCase(false, TestName = "WithoutLogger_EmptyLogs")]
+        [TestCase(true, TestName = "WithLogger_WritesLogs")]
+        public async Task Logs(bool withLogger)
+        {
+            // Arrange
+            var stringWriter = new StringWriter();
+            var serilogLogger = new LoggerConfiguration()
+                .MinimumLevel.Information()
+                .WriteTo.TextWriter(stringWriter, outputTemplate: "[{Level}] {Message}\n{Exception}")
+                .CreateLogger();
+            ILogger<Migrator> logger = new SerilogLoggerFactory(serilogLogger).CreateLogger<Migrator>();
+
+            MigratorBuilder migratorBuilder = MigratorBuilder.FromConnectionString(_runner.ConnectionString, Options)
+                .LoadMigrations(Enumerable.Empty<IMongoMigration>());
+
+            if (withLogger)
+            {
+                migratorBuilder = migratorBuilder.WithLogger(logger);
+            }
+
+            IMigrator migrator = migratorBuilder.Build();
+
+            var expectedLog = withLogger
+                ? "[Information] Starting migration.\n" +
+                    "[Information] Current DB version is \"0.0.0\".\n" +
+                    "[Information] Found 0 migrations.\n" +
+                    "[Information] The DB is up-to-date.\n"
+                : "";
+
+            // Act
+            await migrator.MigrateAsync();
+
+            // Assert
+            stringWriter.ToString().Should().Be(expectedLog);
         }
 
         [TestCaseSource(nameof(FromConnectionStringTests))]

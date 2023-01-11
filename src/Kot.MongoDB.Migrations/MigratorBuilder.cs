@@ -1,9 +1,9 @@
 ﻿using Kot.MongoDB.Migrations.Locators;
+using Microsoft.Extensions.Logging;
 using MongoDB.Driver;
 using System;
 using System.Collections.Generic;
 using System.Reflection;
-using System.Text;
 
 namespace Kot.MongoDB.Migrations
 {
@@ -17,6 +17,7 @@ namespace Kot.MongoDB.Migrations
         private readonly IMigrationInstantiator _instantiator = new ActivatorMigrationInstantiator();
 
         private IMigrationsLocator _locator;
+        private ILogger<Migrator> _logger;
 
         private MigratorBuilder(IMongoClient mongoClient, MigrationOptions options)
         {
@@ -120,6 +121,17 @@ namespace Kot.MongoDB.Migrations
         }
 
         /// <summary>
+        /// Write logs to the specified logger.
+        /// </summary>
+        /// <param name="logger">Logger.</param>
+        /// <returns><see cref="MigratorBuilder"/> that uses the specified logger.</returns>
+        public MigratorBuilder WithLogger(ILogger<Migrator> logger)
+        {
+            _logger = logger;
+            return this;
+        }
+
+        /// <summary>
         /// Build migrator.
         /// </summary>
         /// <returns>An instance of <see cref="IMigrator"/>.</returns>
@@ -131,7 +143,7 @@ namespace Kot.MongoDB.Migrations
                 throw new InvalidOperationException("Migrations location was not specified.");
             }
 
-            return new Migrator(_locator, _mongoClient, _options);
+            return new Migrator(_locator, _mongoClient, _options, _logger);
         }
     }
 }

@@ -8,7 +8,7 @@
   </PropertyGroup>
   
   <PropertyGroup>
-    <PackageVersion>2.0.0-beta</PackageVersion>
+    <PackageVersion>2.0.0-beta.1</PackageVersion>
     <Description>MongoDB migrations library for .NET</Description>
     <PackageTags>mongodb;mongodb-driver;migrations;transactions</PackageTags>
   </PropertyGroup>
