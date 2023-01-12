@@ -9,6 +9,7 @@
 
   <PropertyGroup>
     <PackageVersion>2.0.0-beta.1</PackageVersion>
+    <AssemblyVersion>2.0.0.0</AssemblyVersion>
     <Description>DI support for Kot.MongoDB.Migrations</Description>
     <PackageTags>mongodb;mongodb-driver;migrations;transactions;di</PackageTags>
   </PropertyGroup>
