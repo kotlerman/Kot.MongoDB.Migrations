@@ -123,11 +123,16 @@ namespace Kot.MongoDB.Migrations
         /// <summary>
         /// Write logs to the specified logger.
         /// </summary>
-        /// <param name="logger">Logger.</param>
+        /// <param name="loggerFactory">Logger factory.</param>
         /// <returns><see cref="MigratorBuilder"/> that uses the specified logger.</returns>
-        public MigratorBuilder WithLogger(ILogger<Migrator> logger)
+        public MigratorBuilder WithLogger(ILoggerFactory loggerFactory)
         {
-            _logger = logger;
+            if (loggerFactory == null)
+            {
+                throw new ArgumentNullException(nameof(loggerFactory));
+            }
+
+            _logger = loggerFactory.CreateLogger<Migrator>();
             return this;
         }
 

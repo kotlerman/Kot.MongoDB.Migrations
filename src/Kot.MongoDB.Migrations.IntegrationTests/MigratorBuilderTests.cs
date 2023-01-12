@@ -221,18 +221,18 @@ namespace Kot.MongoDB.Migrations.IntegrationTests
         {
             // Arrange
             var stringWriter = new StringWriter();
-            var serilogLogger = new LoggerConfiguration()
-                .MinimumLevel.Information()
-                .WriteTo.TextWriter(stringWriter, outputTemplate: "[{Level}] {Message}\n{Exception}")
-                .CreateLogger();
-            ILogger<Migrator> logger = new SerilogLoggerFactory(serilogLogger).CreateLogger<Migrator>();
 
             MigratorBuilder migratorBuilder = MigratorBuilder.FromConnectionString(_runner.ConnectionString, Options)
                 .LoadMigrations(Enumerable.Empty<IMongoMigration>());
 
             if (withLogger)
             {
-                migratorBuilder = migratorBuilder.WithLogger(logger);
+                var serilogLogger = new LoggerConfiguration()
+                    .MinimumLevel.Information()
+                    .WriteTo.TextWriter(stringWriter, outputTemplate: "[{Level}] {Message}\n{Exception}")
+                    .CreateLogger();
+
+                migratorBuilder = migratorBuilder.WithLogger(new SerilogLoggerFactory(serilogLogger));
             }
 
             IMigrator migrator = migratorBuilder.Build();
@@ -268,6 +268,13 @@ namespace Kot.MongoDB.Migrations.IntegrationTests
         {
             var builder = MigratorBuilder.FromMongoClient(new Mock<IMongoClient>().Object, Options);
             Assert.Throws<InvalidOperationException>(() => builder.Build());
+        }
+
+        [Test]
+        public void WithLogger_ArgumentNullException()
+        {
+            var builder = MigratorBuilder.FromMongoClient(new Mock<IMongoClient>().Object, Options);
+            Assert.Throws<ArgumentNullException>(() => builder.WithLogger(null));
         }
 
         private async Task TestMigration(IMigrator migrator, IEnumerable<string> expectedVersions)
