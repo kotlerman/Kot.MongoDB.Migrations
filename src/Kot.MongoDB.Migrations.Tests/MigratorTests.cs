@@ -331,6 +331,113 @@ namespace Kot.MongoDB.Migrations.Tests
             loggerWrapper.GetLogString().Should().Be(expectedLog);
         }
 
+        [Test]
+        public async Task RollbackOutdatedDb()
+        {
+            // Arrange
+            var migrations = new IMongoMigration[]
+            {
+                new MigratorTest_Migration("0.0.1"),
+                new MigratorTest_Migration("0.0.2"),
+            };
+            var historyDocs = new MigrationHistory
+            {
+                Name = migrations[0].Name,
+                Version = migrations[0].Version,
+                AppliedAt = DateTime.Now
+            };
+            await _histCollection.InsertOneAsync(historyDocs);
+
+            var migrator = SetupMigrator(migrations, TransactionScope.None, null);
+
+            var expectedResult = new MigrationResult
+            {
+                Type = MigrationResultType.Downgraded,
+                AppliedMigrations = new List<IMongoMigration>() { migrations[0] },
+                InitialVersion = migrations[0].Version,
+                FinalVersion = null,
+                StartTime = DateTime.Now,
+                FinishTime = DateTime.Now
+            };
+
+            // Act
+            MigrationResult actualResult = await migrator.MigrateAsync("0.0.0");
+
+            // Assert
+            List<MigrationHistory> actualHistoryDocs = await _histCollection.Find(FilterDefinition<MigrationHistory>.Empty).ToListAsync();
+            actualHistoryDocs.Should().BeEmpty();
+
+            VerifyMigrationResult(actualResult, expectedResult);
+        }
+
+        [Test]
+        public async Task RollbackAll_RolledBack()
+        {
+            // Arrange
+            var migrations = new IMongoMigration[]
+            {
+                new MigratorTest_Migration("0.0.1"),
+                new MigratorTest_Migration("0.0.2"),
+            };
+            var historyDocs = migrations
+                .Select(x => new MigrationHistory { Name = x.Name, Version = x.Version, AppliedAt = DateTime.Now })
+                .ToList();
+            await _histCollection.InsertManyAsync(historyDocs);
+
+            var migrator = SetupMigrator(migrations, TransactionScope.None, null);
+
+            var expectedResult = new MigrationResult
+            {
+                Type = MigrationResultType.Downgraded,
+                AppliedMigrations = new List<IMongoMigration>() { migrations[1], migrations[0] },
+                InitialVersion = migrations[1].Version,
+                FinalVersion = null,
+                StartTime = DateTime.Now,
+                FinishTime = DateTime.Now
+            };
+
+            // Act
+            MigrationResult actualResult = await migrator.MigrateAsync("0.0.0");
+
+            // Assert
+            List<MigrationHistory> actualHistoryDocs = await _histCollection.Find(FilterDefinition<MigrationHistory>.Empty).ToListAsync();
+            actualHistoryDocs.Should().BeEmpty();
+
+            VerifyMigrationResult(actualResult, expectedResult);
+        }
+
+        [Test]
+        public async Task RollbackAll_NothingToRollback()
+        {
+            // Arrange
+            var migrations = new IMongoMigration[]
+            {
+                new MigratorTest_Migration("0.0.1"),
+                new MigratorTest_Migration("0.0.2"),
+            };
+
+            var migrator = SetupMigrator(migrations, TransactionScope.None, null);
+
+            var expectedResult = new MigrationResult
+            {
+                Type = MigrationResultType.UpToDate,
+                AppliedMigrations = new List<IMongoMigration>(),
+                InitialVersion = null,
+                FinalVersion = null,
+                StartTime = DateTime.Now,
+                FinishTime = DateTime.Now
+            };
+
+            // Act
+            MigrationResult actualResult = await migrator.MigrateAsync("0.0.0");
+
+            // Assert
+            List<MigrationHistory> actualHistoryDocs = await _histCollection.Find(FilterDefinition<MigrationHistory>.Empty).ToListAsync();
+            actualHistoryDocs.Should().BeEmpty();
+
+            VerifyMigrationResult(actualResult, expectedResult);
+        }
+
         [TestCaseSource(typeof(MigratorTestCases), nameof(MigratorTestCases.MigrationException_NoTransaction))]
         public async Task MigrationException_NoTransaction(bool withLogger, string expectedLog)
         {

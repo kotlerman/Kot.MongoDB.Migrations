@@ -126,6 +126,7 @@ namespace Kot.MongoDB.Migrations
             {
                 applicableMigrations = migrations
                     .Reverse<IMongoMigration>()
+                    .SkipWhile(x => x.Version > currVersion)
                     .TakeWhile(x => x.Version > targetVersion.Value)
                     .ToList();
             }
