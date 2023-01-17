@@ -8,10 +8,10 @@
   </PropertyGroup>
   
   <PropertyGroup>
-    <PackageVersion>2.0.0</PackageVersion>
+    <PackageVersion>2.0.1</PackageVersion>
     <AssemblyVersion>2.0.0.0</AssemblyVersion>
     <Description>MongoDB migrations library for .NET</Description>
-    <PackageTags>mongodb;mongodb-driver;migrations;transactions</PackageTags>
+    <PackageTags>mongodb;mongodb-driver;mongo;migration;migrations;transactions</PackageTags>
   </PropertyGroup>
 
   <ItemGroup>
