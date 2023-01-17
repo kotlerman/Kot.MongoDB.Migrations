@@ -86,6 +86,26 @@ namespace Kot.MongoDB.Migrations
                 }
             }
 
+            try
+            {
+                return await MigrateInner(startTime, targetVersion, cancellationToken).ConfigureAwait(false);
+            }
+            catch (Exception ex)
+            {
+                _logger?.LogError(ex, "There was an error while applying the migrations.");
+                throw;
+            }
+            finally
+            {
+                _logger?.LogDebug("Releasing DB lock.");
+                await ReleaseDbLock(cancellationToken).ConfigureAwait(false);
+                _logger?.LogDebug("DB lock released.");
+                _logger?.LogInformation("Migration completed.");
+            }
+        }
+
+        private async Task<MigrationResult> MigrateInner(DateTime startTime, DatabaseVersion? targetVersion, CancellationToken cancellationToken)
+        {
             _logger?.LogDebug("Creating indexes for migrations history collection.");
             await CreateIndex().ConfigureAwait(false);
 
@@ -170,11 +190,6 @@ namespace Kot.MongoDB.Migrations
             _logger?.LogDebug("Verifying DB version after migration.");
             DatabaseVersion? finalVersion = await GetCurrentDatabaseVersion(_historyCollection, cancellationToken).ConfigureAwait(false);
             _logger?.LogInformation("The DB was migrated to version {version}.", finalVersion);
-
-            _logger?.LogDebug("Releasing DB lock.");
-            await ReleaseDbLock(cancellationToken).ConfigureAwait(false);
-            _logger?.LogDebug("DB lock released.");
-            _logger?.LogInformation("Migration completed.");
 
             return new MigrationResult
             {

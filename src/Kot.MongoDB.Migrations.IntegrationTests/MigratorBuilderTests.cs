@@ -241,7 +241,8 @@ namespace Kot.MongoDB.Migrations.IntegrationTests
                 ? "[Information] Starting migration.\n" +
                     "[Information] Current DB version is \"0.0.0\".\n" +
                     "[Information] Found 0 migrations.\n" +
-                    "[Information] The DB is up-to-date.\n"
+                    "[Information] The DB is up-to-date.\n" +
+                    "[Information] Migration completed.\n"
                 : "";
 
             // Act

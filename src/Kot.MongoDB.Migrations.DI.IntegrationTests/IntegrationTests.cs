@@ -394,7 +394,10 @@ namespace Kot.MongoDB.Migrations.DI.IntegrationTests
                 "[Information] Current DB version is \"0.0.0\".\n" +
                 "[Debug] Locating migrations.\n" +
                 "[Information] Found 0 migrations.\n" +
-                "[Information] The DB is up-to-date.\n";
+                "[Information] The DB is up-to-date.\n" +
+                "[Debug] Releasing DB lock.\n" +
+                "[Debug] DB lock released.\n" +
+                "[Information] Migration completed.\n";
         }
     }
 }

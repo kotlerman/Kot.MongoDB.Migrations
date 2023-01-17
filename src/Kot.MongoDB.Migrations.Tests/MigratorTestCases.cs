@@ -149,7 +149,10 @@ namespace Kot.MongoDB.Migrations.Tests
                 "[Information] Current DB version is \"0.0.0\".\n" +
                 "[Debug] Locating migrations.\n" +
                 "[Information] Found 0 migrations.\n" +
-                "[Information] The DB is up-to-date.\n";
+                "[Information] The DB is up-to-date.\n" +
+                "[Debug] Releasing DB lock.\n" +
+                "[Debug] DB lock released.\n" +
+                "[Information] Migration completed.\n";
 
             public const string ApplyUpNone = "[Information] Starting migration. Target version is \"0.0.3\".\n" +
                 "[Debug] Acquiring DB lock.\n" +
@@ -337,7 +340,10 @@ namespace Kot.MongoDB.Migrations.Tests
                 "[Information] Current DB version is \"0.0.1\".\n" +
                 "[Debug] Locating migrations.\n" +
                 "[Information] Found 1 migrations.\n" +
-                "[Information] The DB is up-to-date.\n";
+                "[Information] The DB is up-to-date.\n" +
+                "[Debug] Releasing DB lock.\n" +
+                "[Debug] DB lock released.\n" +
+                "[Information] Migration completed.\n";
 
             public const string FirstMigrationAlreadyApplied = "[Information] Starting migration.\n" +
                 "[Debug] Acquiring DB lock.\n" +
@@ -389,7 +395,12 @@ namespace Kot.MongoDB.Migrations.Tests
                 "[Information] Upgrading the DB with 1 applicable migrations.\n" +
                 "[Debug] Applying all migrations without transactions.\n" +
                 "[Information] Applying migration \"0.0.1\" (\"0.0.1\").\n" +
-                "[Debug] Applying the migration (UP).\n";
+                "[Debug] Applying the migration (UP).\n" +
+                "[Error] There was an error while applying the migrations.\n" +
+                "System.Exception: Exception of type 'System.Exception' was thrown.*" +
+                "[Debug] Releasing DB lock.\n" +
+                "[Debug] DB lock released.\n" +
+                "[Information] Migration completed.\n";
 
             public const string MigrationExceptionSingle = "[Information] Starting migration.\n" +
                 "[Debug] Acquiring DB lock.\n" +
@@ -460,7 +471,10 @@ namespace Kot.MongoDB.Migrations.Tests
                 "[Information] Current DB version is \"0.0.0\".\n" +
                 "[Debug] Locating migrations.\n" +
                 "[Information] Found 0 migrations.\n" +
-                "[Information] The DB is up-to-date.\n";
+                "[Information] The DB is up-to-date.\n" +
+                "[Debug] Releasing DB lock.\n" +
+                "[Debug] DB lock released.\n" +
+                "[Information] Migration completed.\n";
 
             public const string OtherMigrationInProgressCancel = "[Information] Starting migration.\n" +
                 "[Debug] Acquiring DB lock.\n" +

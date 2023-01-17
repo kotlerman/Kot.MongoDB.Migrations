@@ -79,7 +79,10 @@ namespace Kot.MongoDB.Migrations.Tests
 
             historyRecordsCount.Should().Be(0);
             collectionNames.Should().ContainSingle(x => x == MigrationsCollectionName);
+
+            await VerifyNoLocks();
             VerifyMigrationResult(actualResult, expectedResult);
+
             loggerWrapper.GetLogString().Should().Be(expectedLog);
         }
 
@@ -128,7 +131,9 @@ namespace Kot.MongoDB.Migrations.Tests
                 .HaveCount(migrations.Length)
                 .And.BeEquivalentTo(expectedTestDocs);
 
+            await VerifyNoLocks();
             VerifyMigrationResult(actualResult, expectedResult);
+
             loggerWrapper.GetLogString().Should().Be(expectedLog);
         }
 
@@ -180,7 +185,9 @@ namespace Kot.MongoDB.Migrations.Tests
             actualTestDocs.Should().HaveCount(1)
                 .And.ContainEquivalentOf(testDocs[0]);
 
+            await VerifyNoLocks();
             VerifyMigrationResult(actualResult, expectedResult);
+
             loggerWrapper.GetLogString().Should().Be(expectedLog);
         }
 
@@ -224,7 +231,9 @@ namespace Kot.MongoDB.Migrations.Tests
 
             actualTestDocs.Should().BeEmpty();
 
+            await VerifyNoLocks();
             VerifyMigrationResult(actualResult, expectedResult);
+
             loggerWrapper.GetLogString().Should().Be(expectedLog);
         }
 
@@ -274,7 +283,9 @@ namespace Kot.MongoDB.Migrations.Tests
                 .And.BeEquivalentTo(expectedHistoryDocs,
                     opt => opt.Excluding(x => x.Id).UsingNonStrictDateTimeComparison());
 
+            await VerifyNoLocks();
             VerifyMigrationResult(actualResult, expectedResult);
+
             loggerWrapper.GetLogString().Should().Be(expectedLog);
         }
 
@@ -327,7 +338,9 @@ namespace Kot.MongoDB.Migrations.Tests
                 .And.BeEquivalentTo(expectedHistoryDocs,
                     opt => opt.Excluding(x => x.Id).UsingNonStrictDateTimeComparison());
 
+            await VerifyNoLocks();
             VerifyMigrationResult(actualResult, expectedResult);
+
             loggerWrapper.GetLogString().Should().Be(expectedLog);
         }
 
@@ -367,6 +380,7 @@ namespace Kot.MongoDB.Migrations.Tests
             List<MigrationHistory> actualHistoryDocs = await _histCollection.Find(FilterDefinition<MigrationHistory>.Empty).ToListAsync();
             actualHistoryDocs.Should().BeEmpty();
 
+            await VerifyNoLocks();
             VerifyMigrationResult(actualResult, expectedResult);
         }
 
@@ -403,6 +417,7 @@ namespace Kot.MongoDB.Migrations.Tests
             List<MigrationHistory> actualHistoryDocs = await _histCollection.Find(FilterDefinition<MigrationHistory>.Empty).ToListAsync();
             actualHistoryDocs.Should().BeEmpty();
 
+            await VerifyNoLocks();
             VerifyMigrationResult(actualResult, expectedResult);
         }
 
@@ -435,6 +450,7 @@ namespace Kot.MongoDB.Migrations.Tests
             List<MigrationHistory> actualHistoryDocs = await _histCollection.Find(FilterDefinition<MigrationHistory>.Empty).ToListAsync();
             actualHistoryDocs.Should().BeEmpty();
 
+            await VerifyNoLocks();
             VerifyMigrationResult(actualResult, expectedResult);
         }
 
@@ -460,7 +476,17 @@ namespace Kot.MongoDB.Migrations.Tests
 
             actualHistoryDocs.Should().BeEmpty();
             actualTestDocs.Should().BeEmpty();
-            loggerWrapper.GetLogString().Should().Be(expectedLog);
+
+            await VerifyNoLocks();
+
+            if (withLogger)
+            {
+                loggerWrapper.GetLogString().Should().Match(expectedLog);
+            }
+            else
+            {
+                loggerWrapper.GetLogString().Should().BeNull();
+            }
         }
 
         [TestCaseSource(typeof(MigratorTestCases), nameof(MigratorTestCases.MigrationException_SingleMigrationTransaction))]
@@ -489,6 +515,8 @@ namespace Kot.MongoDB.Migrations.Tests
 
             actualTestDocs.Should().HaveCount(1)
                 .And.Contain(x => x.Version == migrations[0].Version);
+
+            await VerifyNoLocks();
 
             if (withLogger)
             {
@@ -523,6 +551,8 @@ namespace Kot.MongoDB.Migrations.Tests
 
             actualHistoryDocs.Should().BeEmpty();
             actualTestDocs.Should().BeEmpty();
+
+            await VerifyNoLocks();
 
             if (withLogger)
             {
@@ -576,6 +606,8 @@ namespace Kot.MongoDB.Migrations.Tests
                 .HaveCount(testDocs.Count)
                 .And.BeEquivalentTo(testDocs);
 
+            await VerifyNoLocks();
+
             if (withLogger)
             {
                 loggerWrapper.GetLogString().Should().Match(expectedLog);
@@ -607,6 +639,8 @@ namespace Kot.MongoDB.Migrations.Tests
             versionIndexKey[majorKey].Should().Be(1);
             versionIndexKey[minorKey].Should().Be(1);
             versionIndexKey[patchKey].Should().Be(1);
+
+            await VerifyNoLocks();
 
             loggerWrapper.GetLogString().Should().Be(expectedLog);
         }
@@ -762,6 +796,7 @@ namespace Kot.MongoDB.Migrations.Tests
 
             actualLockDoc.Should().BeNull();
 
+            await VerifyNoLocks();
             VerifyMigrationResult(actualResultA, expectedResultA);
             VerifyMigrationResult(actualResultB, expectedResultB);
 
@@ -822,6 +857,7 @@ namespace Kot.MongoDB.Migrations.Tests
 
             actualLockDoc.Should().BeNull();
 
+            await VerifyNoLocks();
             VerifyMigrationResult(actualResultA, expectedResultA);
 
             loggerWrapperA.GetLogString().Should().Be(expectedLogA);
@@ -843,6 +879,12 @@ namespace Kot.MongoDB.Migrations.Tests
             var migrator = new Migrator(locatorMock.Object, _client, options, logger);
 
             return migrator;
+        }
+
+        private async Task VerifyNoLocks()
+        {
+            List<MigrationLock> actualLocks = await _lockCollection.Find(FilterDefinition<MigrationLock>.Empty).ToListAsync();
+            actualLocks.Should().BeEmpty();
         }
 
         private static void VerifyMigrationResult(MigrationResult actual, MigrationResult expected)
