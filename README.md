@@ -3,7 +3,7 @@
 [![License](https://img.shields.io/badge/License-MIT-blue)](https://github.com/kotlerman/Kot.MongoDB.Migrations/blob/main/LICENSE)
 
 # Kot.MongoDB.Migrations
-This package enables you to create and run MongoDb migrations. Simple and clean, requires only [MongoDB.Driver](https://github.com/mongodb/mongo-csharp-driver). Supports wrapping migrations in a transaction. To use with DI containers, see [Kot.MongoDB.Migrations.DI](#kotmongodbmigrationsdi) below.
+This package enables you to create and run MongoDb migrations. Simple and clean, with minimal dependencies. Supports wrapping migrations in a transaction. To use with DI containers, see [Kot.MongoDB.Migrations.DI](#kotmongodbmigrationsdi) below.
 
 ## Installation
 Run the following command in the NuGet Package Manager Console:
@@ -37,6 +37,7 @@ Create an instance of *IMigrator* using *MigratorBuilder* (you can also create i
 var options = new MigrationOptions("myDb");
 var migrator = MigratorBuilder.FromConnectionString("mongodb://localhost:27017", options)
     .LoadMigrationsFromCurrentDomain()
+    .WithLogger(...) // Use this to pass ILoggerFactory if you want logs
     .Build();
 ```
 Currently migrations can be loaded with the following methods:
@@ -50,13 +51,13 @@ Currently migrations can be loaded with the following methods:
 ### Running migrations
 To apply migrations, add the following code. This will check which migrations were applied before and determine which migrations should be applied now. You can also pass a target version as an argument in case you want to migrate (up/down) to a specific version.
 ```csharp
-await migrator.MigrateAsync();
+MigrationResult result = await migrator.MigrateAsync();
 ```
 
 ### Transactions
 With the help of transactions you can ensure that a database stays in a consistent state when migration process fails. Make sure you know what can and what cannot be done with a database when using transactions (see official [docs](https://www.mongodb.com/docs/upcoming/core/transactions/)).
 To specify how to wrap migrations in transactions, set *TransactionScope* property of *MigrationOptions*. There are 3 options:
-- **None** - transactions are not used
+- **None** - transactions are not used (this is the default value)
 - **SingleMigration** - each migration is wrapped in a separate transaction
 - **AllMigrations** - all migrations a wrapped in a single transaction
 
@@ -88,6 +89,19 @@ var options = new MigrationOptions("myDb")
         DefaultTransactionOptions = new TransactionOptions(maxCommitTime: TimeSpan.FromMinutes(1))
     }
 };
+```
+
+### Parallel runs
+You might face situations with several parallel migration runs. E.g., if you migrate your DB on web app startup and there are several instances of the app. You can specify what to do in such cases by setting *ParallelRunsBehavior* property of *MigrationOptions*. There are 2 options:
+- **Cancel** - silently cancel current run (this is the default value)
+- **Throw** - throw an exception
+
+Example:
+```csharp
+var options = new MigrationOptions("myDb")
+{
+    ParallelRunsBehavior = ParallelRunsBehavior.Throw
+}
 ```
 
 # Kot.MongoDB.Migrations.DI
