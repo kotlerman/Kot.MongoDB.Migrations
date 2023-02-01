@@ -23,9 +23,9 @@ jobs:
     - name: Restore dependencies
       run: dotnet restore
     - name: Build
-      run: dotnet build --no-restore
+      run: dotnet build -c Release --no-restore
     - name: Test
-      run: dotnet test --no-build --verbosity normal -m:1 --results-directory ../TestResults -p:CollectCoverage=true -p:CoverletOutputFormat='"json,lcov"' -p:CoverletOutput=../TestResults/ -p:MergeWith=../TestResults/coverage.json
+      run: dotnet test -c Release --no-build --verbosity normal -m:1 --results-directory ../TestResults -p:CollectCoverage=true -p:CoverletOutputFormat='"json,lcov"' -p:CoverletOutput=../TestResults/ -p:MergeWith=../TestResults/coverage.json
     - name: Coveralls
       uses: coverallsapp/github-action@master
       with:
