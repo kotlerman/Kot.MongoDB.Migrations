@@ -32,11 +32,9 @@ jobs:
         github-token: ${{ secrets.GITHUB_TOKEN }}
         path-to-lcov: ./src/TestResults/coverage.info
     - name: Pack
-      run: dotnet pack -c Release --no-build
+      run: dotnet pack -c Release --no-build -o ../packages
     - name: Archive packages
       uses: actions/upload-artifact@v3
       with:
         name: packages
-        path: |
-          **/*.nupkg
-          **/*.snupkg
+        path: packages
