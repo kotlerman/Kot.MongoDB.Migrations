@@ -2,6 +2,7 @@
   <PropertyGroup>
     <Authors>kotlerman</Authors>
     <PackageIcon>kot.png</PackageIcon>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
     <PackageProjectUrl>https://github.com/kotlerman/Kot.MongoDB.Migrations</PackageProjectUrl>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
   </PropertyGroup>
