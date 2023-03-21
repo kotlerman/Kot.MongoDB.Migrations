@@ -33,8 +33,8 @@ namespace Kot.MongoDB.Migrations.Tests
         private IMongoCollection<MigrationLock> _lockCollection;
         private IMongoCollection<TestDoc> _docCollection;
 
-        [SetUp]
-        public void Setup()
+        [OneTimeSetUp]
+        public void OneTimeSetUp()
         {
             ILogger logger = LoggerFactory
                 .Create(config => config.SetMinimumLevel(LogLevel.Error).AddConsole())
@@ -49,7 +49,15 @@ namespace Kot.MongoDB.Migrations.Tests
         }
 
         [TearDown]
-        public void TearDown()
+        public async Task TearDown()
+        {
+            await _db.DropCollectionAsync(MigrationsCollectionName);
+            await _db.DropCollectionAsync(MigrationsLockCollectionName);
+            await _db.DropCollectionAsync(DocCollectionName);
+        }
+
+        [OneTimeTearDown]
+        public void OneTimeTearDown()
         {
             _runner.Dispose();
         }

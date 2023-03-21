@@ -40,12 +40,6 @@ namespace Kot.MongoDB.Migrations.DI.IntegrationTests
         public void OneTimeSetUp()
         {
             _externalMigrationsAssembly = CompileAndLoadAssemblyWithMigration();
-        }
-
-        [SetUp]
-        public void Setup()
-        {
-            _logWriter = new StringWriter();
 
             Microsoft.Extensions.Logging.ILogger logger = LoggerFactory
                 .Create(config => config.SetMinimumLevel(LogLevel.Error).AddConsole())
@@ -58,8 +52,21 @@ namespace Kot.MongoDB.Migrations.DI.IntegrationTests
             _docCollection = _db.GetCollection<TestDoc>(TestDoc.CollectionName);
         }
 
+        [SetUp]
+        public void SetUp()
+        {
+            _logWriter = new StringWriter();
+        }
+
         [TearDown]
-        public void TearDown()
+        public async Task TearDown()
+        {
+            await _db.DropCollectionAsync(MigrationsCollectionName);
+            await _db.DropCollectionAsync(TestDoc.CollectionName);
+        }
+
+        [OneTimeTearDown]
+        public void OneTimeTearDown()
         {
             _runner.Dispose();
         }

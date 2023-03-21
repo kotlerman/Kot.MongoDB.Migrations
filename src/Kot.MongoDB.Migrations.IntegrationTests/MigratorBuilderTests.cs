@@ -41,11 +41,7 @@ namespace Kot.MongoDB.Migrations.IntegrationTests
         public void OneTimeSetUp()
         {
             _externalMigrationsAssembly = CompileAndLoadAssemblyWithMigration();
-        }
 
-        [SetUp]
-        public void SetUp()
-        {
             Microsoft.Extensions.Logging.ILogger logger = LoggerFactory
                 .Create(config => config.SetMinimumLevel(LogLevel.Error).AddConsole())
                 .CreateLogger("Mongo2Go");
@@ -58,7 +54,14 @@ namespace Kot.MongoDB.Migrations.IntegrationTests
         }
 
         [TearDown]
-        public void TearDown()
+        public async Task TearDown()
+        {
+            await _db.DropCollectionAsync(MigrationsCollectionName);
+            await _db.DropCollectionAsync(TestDoc.CollectionName);
+        }
+
+        [OneTimeTearDown]
+        public void OneTimeTearDown()
         {
             _runner.Dispose();
         }
