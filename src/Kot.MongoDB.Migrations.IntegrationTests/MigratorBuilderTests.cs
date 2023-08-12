@@ -6,7 +6,6 @@ using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.Extensions.Logging;
 using Mongo2Go;
 using MongoDB.Driver;
-using Moq;
 using NUnit.Framework;
 using Serilog.Extensions.Logging;
 using Serilog;
@@ -16,6 +15,7 @@ using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Threading.Tasks;
+using NSubstitute;
 
 namespace Kot.MongoDB.Migrations.IntegrationTests
 {
@@ -270,14 +270,14 @@ namespace Kot.MongoDB.Migrations.IntegrationTests
         [Test]
         public void NoLocator_InvalidOperationException()
         {
-            var builder = MigratorBuilder.FromMongoClient(new Mock<IMongoClient>().Object, Options);
+            var builder = MigratorBuilder.FromMongoClient(Substitute.For<IMongoClient>(), Options);
             Assert.Throws<InvalidOperationException>(() => builder.Build());
         }
 
         [Test]
         public void WithLogger_ArgumentNullException()
         {
-            var builder = MigratorBuilder.FromMongoClient(new Mock<IMongoClient>().Object, Options);
+            var builder = MigratorBuilder.FromMongoClient(Substitute.For<IMongoClient>(), Options);
             Assert.Throws<ArgumentNullException>(() => builder.WithLogger(null));
         }
 
@@ -342,7 +342,7 @@ namespace Kot.MongoDB.Migrations.IntegrationTests
         private static IEnumerable<TestCaseData> FromMongoClientTests() => new[]
         {
             new TestCaseData(null, Options).SetName("FromMongoClient_NullClient_ArgumentNullException"),
-            new TestCaseData(new Mock<IMongoClient>().Object, null).SetName("FromMongoClient_NullOptions_ArgumentNullException"),
+            new TestCaseData(Substitute.For<IMongoClient>(), null).SetName("FromMongoClient_NullOptions_ArgumentNullException"),
         };
     }
 }

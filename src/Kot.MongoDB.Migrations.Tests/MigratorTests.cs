@@ -8,7 +8,7 @@ using Mongo2Go;
 using MongoDB.Bson;
 using MongoDB.Bson.Serialization.Attributes;
 using MongoDB.Driver;
-using Moq;
+using NSubstitute;
 using NUnit.Framework;
 using System;
 using System.Collections.Generic;
@@ -665,14 +665,14 @@ namespace Kot.MongoDB.Migrations.Tests
         {
             // Act && Assert
             Assert.Throws<ArgumentNullException>(
-                () => new Migrator(new Mock<IMigrationsLocator>().Object, null, new MigrationOptions(DatabaseName)));
+                () => new Migrator(Substitute.For<IMigrationsLocator>(), null, new MigrationOptions(DatabaseName)));
         }
 
         [Test]
         public void NullOptions_ThrowsException()
         {
             // Act && Assert
-            Assert.Throws<ArgumentNullException>(() => new Migrator(new Mock<IMigrationsLocator>().Object, _client, null));
+            Assert.Throws<ArgumentNullException>(() => new Migrator(Substitute.For<IMigrationsLocator>(), _client, null));
         }
 
         [TestCaseSource(typeof(MigratorTestCases), nameof(MigratorTestCases.OtherMigrationInProgress_Cancel))]
@@ -875,8 +875,8 @@ namespace Kot.MongoDB.Migrations.Tests
         private Migrator SetupMigrator(IEnumerable<IMongoMigration> migrations, TransactionScope transactionScope, ILogger<Migrator> logger,
             ParallelRunsBehavior parallelRunsBehavior = ParallelRunsBehavior.Cancel)
         {
-            var locatorMock = new Mock<IMigrationsLocator>();
-            locatorMock.Setup(x => x.Locate()).Returns(migrations);
+            var locatorMock = Substitute.For<IMigrationsLocator>();
+            locatorMock.Locate().Returns(migrations);
 
             var options = new MigrationOptions(DatabaseName)
             {
@@ -884,7 +884,7 @@ namespace Kot.MongoDB.Migrations.Tests
                 TransactionScope = transactionScope,
                 ParallelRunsBehavior = parallelRunsBehavior
             };
-            var migrator = new Migrator(locatorMock.Object, _client, options, logger);
+            var migrator = new Migrator(locatorMock, _client, options, logger);
 
             return migrator;
         }
