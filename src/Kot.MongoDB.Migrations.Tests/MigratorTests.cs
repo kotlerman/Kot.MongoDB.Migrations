@@ -4,7 +4,6 @@ using Kot.MongoDB.Migrations.Locators;
 using Kot.MongoDB.Migrations.Tests.Extensions;
 using Kot.MongoDB.Migrations.Tests.Util;
 using Microsoft.Extensions.Logging;
-using Mongo2Go;
 using MongoDB.Bson;
 using MongoDB.Bson.Serialization.Attributes;
 using MongoDB.Driver;
@@ -15,6 +14,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using Testcontainers.MongoDb;
 
 namespace Kot.MongoDB.Migrations.Tests
 {
@@ -26,7 +26,7 @@ namespace Kot.MongoDB.Migrations.Tests
         private const string MigrationsLockCollectionName = "MigrationHistory.lock";
         private const string DocCollectionName = "DocCollection";
 
-        private MongoDbRunner _runner;
+        private MongoDbContainer _container;
         private IMongoClient _client;
         private IMongoDatabase _db;
         private IMongoCollection<MigrationHistory> _histCollection;
@@ -34,14 +34,21 @@ namespace Kot.MongoDB.Migrations.Tests
         private IMongoCollection<TestDoc> _docCollection;
 
         [OneTimeSetUp]
-        public void OneTimeSetUp()
+        public async Task OneTimeSetUp()
         {
-            ILogger logger = LoggerFactory
+            var logger = LoggerFactory
                 .Create(config => config.SetMinimumLevel(LogLevel.Error).AddConsole())
-                .CreateLogger("Mongo2Go");
+                .CreateLogger("MongoDbContainer");
 
-            _runner = MongoDbRunner.Start(singleNodeReplSet: true, logger: logger);
-            _client = new MongoClient(_runner.ConnectionString);
+            _container = new MongoDbBuilder()
+                .WithImage("mongo:8.0")
+                .WithReplicaSet()
+                .WithLogger(logger)
+                .Build();
+
+            await _container.StartAsync();
+
+            _client = new MongoClient(_container.GetConnectionString() + "?directConnection=true");
             _db = _client.GetDatabase(DatabaseName);
             _histCollection = _db.GetCollection<MigrationHistory>(MigrationsCollectionName);
             _lockCollection = _db.GetCollection<MigrationLock>(MigrationsLockCollectionName);
@@ -57,9 +64,9 @@ namespace Kot.MongoDB.Migrations.Tests
         }
 
         [OneTimeTearDown]
-        public void OneTimeTearDown()
+        public async Task OneTimeTearDown()
         {
-            _runner.Dispose();
+            await _container.StopAsync();
         }
 
         [TestCaseSource(typeof(MigratorTestCases), nameof(MigratorTestCases.NoMigrations))]
@@ -640,9 +647,9 @@ namespace Kot.MongoDB.Migrations.Tests
             List<BsonDocument> indexes = await _histCollection.Indexes.List().ToListAsync();
             BsonDocument versionIndexKey = indexes.Single(x => x["name"] != "_id_")["key"].AsBsonDocument;
 
-            const string majorKey = $"{nameof(MigrationHistory.Version)}.{nameof(MigrationHistory.Version.Major)}";
-            const string minorKey = $"{nameof(MigrationHistory.Version)}.{nameof(MigrationHistory.Version.Minor)}";
-            const string patchKey = $"{nameof(MigrationHistory.Version)}.{nameof(MigrationHistory.Version.Patch)}";
+            const string majorKey = nameof(MigrationHistory.Version) + "." + nameof(MigrationHistory.Version.Major);
+            const string minorKey = nameof(MigrationHistory.Version) + "." + nameof(MigrationHistory.Version.Minor);
+            const string patchKey = nameof(MigrationHistory.Version) + "." + nameof(MigrationHistory.Version.Patch);
 
             versionIndexKey[majorKey].Should().Be(1);
             versionIndexKey[minorKey].Should().Be(1);
@@ -749,7 +756,7 @@ namespace Kot.MongoDB.Migrations.Tests
         public async Task ParallelMigrations_FirstApplied_SecondCancelled(bool withLogger, string expectedLogA, string expectedLogB)
         {
             // Arrange
-            var completionSource = new TaskCompletionSource();
+            var completionSource = new TaskCompletionSource<object>();
             var migrationA = new MigratorTest_MigrationManualCompletion(completionSource.Task);
             var migrationsA = new IMongoMigration[]
             {
@@ -788,7 +795,7 @@ namespace Kot.MongoDB.Migrations.Tests
             Task<MigrationResult> actualResultTaskA = migratorA.MigrateAsync();
             await migrationA.StartedTask;
             MigrationResult actualResultB = await migratorB.MigrateAsync();
-            completionSource.SetResult();
+            completionSource.SetResult(null);
             MigrationResult actualResultA = await actualResultTaskA;
 
             // Assert
@@ -816,7 +823,7 @@ namespace Kot.MongoDB.Migrations.Tests
         public async Task ParallelMigrations_FirstApplied_SecondThrows(bool withLogger, string expectedLogA, string expectedLogB)
         {
             // Arrange
-            var completionSource = new TaskCompletionSource();
+            var completionSource = new TaskCompletionSource<object>();
             var migrationA = new MigratorTest_MigrationManualCompletion(completionSource.Task);
             var migrationsA = new IMongoMigration[]
             {
@@ -847,7 +854,7 @@ namespace Kot.MongoDB.Migrations.Tests
             await migrationA.StartedTask;
             Task<MigrationResult> actualResultTaskB = migratorB.MigrateAsync();
             Task.WaitAny(actualResultTaskB);
-            completionSource.SetResult();
+            completionSource.SetResult(null);
             MigrationResult actualResultA = await actualResultTaskA;
 
             // Assert
@@ -961,7 +968,7 @@ namespace Kot.MongoDB.Migrations.Tests
         class MigratorTest_MigrationManualCompletion : MongoMigration
         {
             private readonly Task _task;
-            private readonly TaskCompletionSource startedTaskSource = new TaskCompletionSource();
+            private readonly TaskCompletionSource<object> startedTaskSource = new TaskCompletionSource<object>();
 
             public Task StartedTask => startedTaskSource.Task;
 
@@ -972,7 +979,7 @@ namespace Kot.MongoDB.Migrations.Tests
 
             public override async Task UpAsync(IMongoDatabase db, IClientSessionHandle session, CancellationToken cancellationToken)
             {
-                startedTaskSource.SetResult();
+                startedTaskSource.SetResult(null);
                 IMongoCollection<TestDoc> collection = db.GetCollection<TestDoc>(DocCollectionName);
                 var doc = new TestDoc { Version = Version.ToString() };
                 await collection.InsertOneAsync(doc, null, cancellationToken);

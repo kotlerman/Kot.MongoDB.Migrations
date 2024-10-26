@@ -22,7 +22,7 @@ namespace Kot.MongoDB.Migrations.DI.Tests
             Assert.Throws<InvalidOperationException>(() => second(configurator));
         }
 
-        private static Action<DIMigrationsLocationConfigurator>[] ConfiguratorActions() => new[]
+        private static Action<DIMigrationsLocationConfigurator>[] ConfiguratorActions() => new Action<DIMigrationsLocationConfigurator>[]
         {
             (DIMigrationsLocationConfigurator config) => config.LoadMigrationsFromCurrentDomain(),
             (DIMigrationsLocationConfigurator config) => config.LoadMigrationsFromAssembly(Assembly.GetExecutingAssembly()),

@@ -6,7 +6,6 @@ using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
-using Mongo2Go;
 using MongoDB.Driver;
 using NUnit.Framework;
 using Serilog;
@@ -17,6 +16,7 @@ using System.Linq;
 using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
+using Testcontainers.MongoDb;
 
 namespace Kot.MongoDB.Migrations.DI.IntegrationTests
 {
@@ -30,23 +30,32 @@ namespace Kot.MongoDB.Migrations.DI.IntegrationTests
 
         private StringWriter _logWriter;
         private Assembly _externalMigrationsAssembly;
-        private MongoDbRunner _runner;
+        private MongoDbContainer _container;
+        private string _connectionString;
         private IMongoClient _client;
         private IMongoDatabase _db;
         private IMongoCollection<MigrationHistory> _histCollection;
         private IMongoCollection<TestDoc> _docCollection;
 
         [OneTimeSetUp]
-        public void OneTimeSetUp()
+        public async Task OneTimeSetUp()
         {
             _externalMigrationsAssembly = CompileAndLoadAssemblyWithMigration();
 
-            Microsoft.Extensions.Logging.ILogger logger = LoggerFactory
+            var logger = LoggerFactory
                 .Create(config => config.SetMinimumLevel(LogLevel.Error).AddConsole())
-                .CreateLogger("Mongo2Go");
+                .CreateLogger("MongoDbContainer");
 
-            _runner = MongoDbRunner.Start(singleNodeReplSet: true, logger: logger);
-            _client = new MongoClient(_runner.ConnectionString);
+            _container = new MongoDbBuilder()
+                .WithImage("mongo:8.0")
+                .WithReplicaSet()
+                .WithLogger(logger)
+                .Build();
+
+            await _container.StartAsync();
+
+            _connectionString = _container.GetConnectionString() + "?directConnection=true";
+            _client = new MongoClient(_connectionString);
             _db = _client.GetDatabase(DatabaseName);
             _histCollection = _db.GetCollection<MigrationHistory>(MigrationsCollectionName);
             _docCollection = _db.GetCollection<TestDoc>(TestDoc.CollectionName);
@@ -66,9 +75,9 @@ namespace Kot.MongoDB.Migrations.DI.IntegrationTests
         }
 
         [OneTimeTearDown]
-        public void OneTimeTearDown()
+        public async Task OneTimeTearDown()
         {
-            _runner.Dispose();
+            await _container.StopAsync();
         }
 
         [Test]
@@ -288,7 +297,7 @@ namespace Kot.MongoDB.Migrations.DI.IntegrationTests
         {
             await TestMigration((services, options) =>
             {
-                services.AddMongoMigrations(_runner.ConnectionString, options, configure);
+                services.AddMongoMigrations(_connectionString, options, configure);
             },
             expectedVersions,
             withLogs);
@@ -366,10 +375,11 @@ namespace Kot.MongoDB.Migrations.DI.IntegrationTests
                 .AddReferences(references)
                 .AddSyntaxTrees(syntaxTree);
 
-            using var memoryStream = new MemoryStream();
-            compilation.Emit(memoryStream);
-
-            return AppDomain.CurrentDomain.Load(memoryStream.ToArray());
+            using (var memoryStream = new MemoryStream())
+            {
+                compilation.Emit(memoryStream);
+                return AppDomain.CurrentDomain.Load(memoryStream.ToArray());
+            }
         }
 
         class HostedService : IHostedService

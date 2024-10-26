@@ -16,6 +16,7 @@ namespace Kot.MongoDB.Migrations.MigrationsLocatorTests
     public class FailureMigrationsLocatorTests
     {
         private const string MigrationsNamespace = "Kot.MongoDB.Migrations.MigrationsLocatorTests.Migrations.Duplicates";
+        private static readonly Random Rand = new Random();
         private static Assembly CreatedAssembly;
 
         [OneTimeSetUp]
@@ -79,17 +80,18 @@ namespace Kot.MongoDB.Migrations.MigrationsLocatorTests
                 .AddReferences(references)
                 .AddSyntaxTrees(syntaxTrees);
 
-            using var memoryStream = new MemoryStream();
-            compilation.Emit(memoryStream);
-
-            return AppDomain.CurrentDomain.Load(memoryStream.ToArray());
+            using (var memoryStream = new MemoryStream())
+            {
+                compilation.Emit(memoryStream);
+                return AppDomain.CurrentDomain.Load(memoryStream.ToArray());
+            }
         }
 
         private static string GenerateMigrationCode(string version)
         {
-            string className = "DuplicateMigration" + version.Replace(".", "_") + "_" + Random.Shared.Next();
+            string className = "DuplicateMigration" + version.Replace(".", "_") + "_" + Rand.Next();
 
-            return @$"
+            return $@"
                 using MongoDB.Driver;
                 using System.Threading;
                 using System.Threading.Tasks;

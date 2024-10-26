@@ -4,7 +4,6 @@ using Kot.MongoDB.Migrations.IntegrationTests.Migrations.Subfolder;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.Extensions.Logging;
-using Mongo2Go;
 using MongoDB.Driver;
 using NUnit.Framework;
 using Serilog.Extensions.Logging;
@@ -16,6 +15,7 @@ using System.Linq;
 using System.Reflection;
 using System.Threading.Tasks;
 using NSubstitute;
+using Testcontainers.MongoDb;
 
 namespace Kot.MongoDB.Migrations.IntegrationTests
 {
@@ -25,12 +25,13 @@ namespace Kot.MongoDB.Migrations.IntegrationTests
         private const string DatabaseName = "IntegrationTest";
         private const string MigrationsCollectionName = "MigrationHistory";
 
-        private static readonly MigrationOptions Options = new(DatabaseName)
+        private static readonly MigrationOptions Options = new MigrationOptions(DatabaseName)
         {
             MigrationsCollectionName = MigrationsCollectionName
         };
 
-        private MongoDbRunner _runner;
+        private MongoDbContainer _container;
+        private string _connectionString;
         private IMongoClient _client;
         private IMongoDatabase _db;
         private IMongoCollection<MigrationHistory> _histCollection;
@@ -38,16 +39,24 @@ namespace Kot.MongoDB.Migrations.IntegrationTests
         private Assembly _externalMigrationsAssembly;
 
         [OneTimeSetUp]
-        public void OneTimeSetUp()
+        public async Task OneTimeSetUp()
         {
             _externalMigrationsAssembly = CompileAndLoadAssemblyWithMigration();
 
-            Microsoft.Extensions.Logging.ILogger logger = LoggerFactory
+            var logger = LoggerFactory
                 .Create(config => config.SetMinimumLevel(LogLevel.Error).AddConsole())
-                .CreateLogger("Mongo2Go");
+                .CreateLogger("MongoDbContainer");
 
-            _runner = MongoDbRunner.Start(singleNodeReplSet: true, logger: logger);
-            _client = new MongoClient(_runner.ConnectionString);
+            _container = new MongoDbBuilder()
+                .WithImage("mongo:8.0")
+                .WithReplicaSet()
+                .WithLogger(logger)
+                .Build();
+
+            await _container.StartAsync();
+
+            _connectionString = _container.GetConnectionString() + "?directConnection=true";
+            _client = new MongoClient(_connectionString);
             _db = _client.GetDatabase(DatabaseName);
             _histCollection = _db.GetCollection<MigrationHistory>(MigrationsCollectionName);
             _docCollection = _db.GetCollection<TestDoc>(TestDoc.CollectionName);
@@ -61,9 +70,9 @@ namespace Kot.MongoDB.Migrations.IntegrationTests
         }
 
         [OneTimeTearDown]
-        public void OneTimeTearDown()
+        public async Task OneTimeTearDown()
         {
-            _runner.Dispose();
+            await _container.StopAsync();
         }
 
         [Test]
@@ -84,7 +93,7 @@ namespace Kot.MongoDB.Migrations.IntegrationTests
         public async Task FromConnectionString_FromCurrentDomain()
         {
             // Arrange
-            IMigrator migrator = MigratorBuilder.FromConnectionString(_runner.ConnectionString, Options)
+            IMigrator migrator = MigratorBuilder.FromConnectionString(_connectionString, Options)
                 .LoadMigrationsFromCurrentDomain()
                 .Build();
 
@@ -112,7 +121,7 @@ namespace Kot.MongoDB.Migrations.IntegrationTests
         public async Task FromConnectionString_FromExecutingAssembly()
         {
             // Arrange
-            IMigrator migrator = MigratorBuilder.FromConnectionString(_runner.ConnectionString, Options)
+            IMigrator migrator = MigratorBuilder.FromConnectionString(_connectionString, Options)
                 .LoadMigrationsFromExecutingAssembly()
                 .Build();
 
@@ -140,7 +149,7 @@ namespace Kot.MongoDB.Migrations.IntegrationTests
         public async Task FromConnectionString_FromAssembly()
         {
             // Arrange
-            IMigrator migrator = MigratorBuilder.FromConnectionString(_runner.ConnectionString, Options)
+            IMigrator migrator = MigratorBuilder.FromConnectionString(_connectionString, Options)
                 .LoadMigrationsFromAssembly(_externalMigrationsAssembly)
                 .Build();
 
@@ -168,7 +177,7 @@ namespace Kot.MongoDB.Migrations.IntegrationTests
         public async Task FromConnectionString_FromNamespace()
         {
             // Arrange
-            IMigrator migrator = MigratorBuilder.FromConnectionString(_runner.ConnectionString, Options)
+            IMigrator migrator = MigratorBuilder.FromConnectionString(_connectionString, Options)
                 .LoadMigrationsFromNamespace("Kot.MongoDB.Migrations.IntegrationTests.Migrations.Subfolder")
                 .Build();
 
@@ -208,7 +217,7 @@ namespace Kot.MongoDB.Migrations.IntegrationTests
                 new SimpleMigration003()
             };
 
-            IMigrator migrator = MigratorBuilder.FromConnectionString(_runner.ConnectionString, Options)
+            IMigrator migrator = MigratorBuilder.FromConnectionString(_connectionString, Options)
                 .LoadMigrations(migrations)
                 .Build();
 
@@ -225,7 +234,7 @@ namespace Kot.MongoDB.Migrations.IntegrationTests
             // Arrange
             var stringWriter = new StringWriter();
 
-            MigratorBuilder migratorBuilder = MigratorBuilder.FromConnectionString(_runner.ConnectionString, Options)
+            MigratorBuilder migratorBuilder = MigratorBuilder.FromConnectionString(_connectionString, Options)
                 .LoadMigrations(Enumerable.Empty<IMongoMigration>());
 
             if (withLogger)
@@ -326,10 +335,11 @@ namespace Kot.MongoDB.Migrations.IntegrationTests
                 .AddReferences(references)
                 .AddSyntaxTrees(syntaxTree);
 
-            using var memoryStream = new MemoryStream();
-            compilation.Emit(memoryStream);
-
-            return AppDomain.CurrentDomain.Load(memoryStream.ToArray());
+            using (var memoryStream = new MemoryStream())
+            {
+                compilation.Emit(memoryStream);
+                return AppDomain.CurrentDomain.Load(memoryStream.ToArray());
+            }
         }
 
         private static IEnumerable<TestCaseData> FromConnectionStringTests() => new[]
