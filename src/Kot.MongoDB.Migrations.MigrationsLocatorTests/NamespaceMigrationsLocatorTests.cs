@@ -26,7 +26,7 @@ namespace Kot.MongoDB.Migrations.MigrationsLocatorTests
 
             for (int i = 0; i < _migrationVersions.Length; i++)
             {
-                Assert.AreEqual(_migrationVersions[i], migrations[i].Version.ToString());
+                migrations[i].Version.ToString().Should().Be(_migrationVersions[i]);
             }
         }
 

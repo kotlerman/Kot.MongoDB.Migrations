@@ -1,4 +1,5 @@
-﻿using NUnit.Framework;
+﻿using FluentAssertions;
+using NUnit.Framework;
 using System;
 using System.Collections.Generic;
 
@@ -14,9 +15,9 @@ namespace Kot.MongoDB.Migrations.Tests
             var version = new DatabaseVersion(1, 2, 3);
 
             // Assert
-            Assert.AreEqual(1, version.Major);
-            Assert.AreEqual(2, version.Minor);
-            Assert.AreEqual(3, version.Patch);
+            version.Major.Should().Be(1);
+            version.Minor.Should().Be(2);
+            version.Patch.Should().Be(3);
         }
 
         [TestCaseSource(nameof(ParseVersion_Success_TestCases))]
@@ -26,9 +27,9 @@ namespace Kot.MongoDB.Migrations.Tests
             var version = new DatabaseVersion(versionString);
 
             // Assert
-            Assert.AreEqual(expectedMajor, version.Major);
-            Assert.AreEqual(expectedMinor, version.Minor);
-            Assert.AreEqual(expectedPatch, version.Patch);
+            version.Major.Should().Be(expectedMajor);
+            version.Minor.Should().Be(expectedMinor);
+            version.Patch.Should().Be(expectedPatch);
         }
 
         [TestCaseSource(nameof(ParseVersion_Failure_ArgumentNull_TestCases))]
@@ -59,7 +60,7 @@ namespace Kot.MongoDB.Migrations.Tests
             var actualString = version.ToString();
 
             // Assert
-            Assert.AreEqual("1.2.3", actualString);
+            actualString.Should().Be("1.2.3");
         }
 
         [TestCaseSource(nameof(Equals_Generic_TestCases))]
@@ -69,7 +70,7 @@ namespace Kot.MongoDB.Migrations.Tests
             bool actualResult = versionA.Equals(versionB);
 
             // Assert
-            Assert.AreEqual(expectedResult, actualResult);
+            actualResult.Should().Be(expectedResult);
         }
 
         [TestCaseSource(nameof(Equals_Object_TestCases))]
@@ -79,7 +80,7 @@ namespace Kot.MongoDB.Migrations.Tests
             bool actualResult = versionA.Equals(versionB);
 
             // Assert
-            Assert.AreEqual(expectedResult, actualResult);
+            actualResult.Should().Be(expectedResult);
         }
 
         [TestCaseSource(nameof(CompareTo_Generic_TestCases))]
@@ -89,7 +90,7 @@ namespace Kot.MongoDB.Migrations.Tests
             int actualResult = Math.Sign(versionA.CompareTo(versionB));
 
             // Assert
-            Assert.AreEqual(expectedResult, actualResult);
+            actualResult.Should().Be(expectedResult);
         }
 
         [TestCaseSource(nameof(CompareTo_Object_TestCases))]
@@ -99,7 +100,7 @@ namespace Kot.MongoDB.Migrations.Tests
             int actualResult = Math.Sign(versionA.CompareTo(versionB));
 
             // Assert
-            Assert.AreEqual(expectedResult, actualResult);
+            actualResult.Should().Be(expectedResult);
         }
 
         [TestCaseSource(nameof(GetHashCode_SameOnEqual_TestCases))]
@@ -110,7 +111,7 @@ namespace Kot.MongoDB.Migrations.Tests
             int hashCodeB = versionB.GetHashCode();
 
             // Assert
-            Assert.AreEqual(hashCodeB, hashCodeA);
+            hashCodeA.Should().Be(hashCodeB);
         }
 
         [Test]
@@ -120,9 +121,9 @@ namespace Kot.MongoDB.Migrations.Tests
             var version = (DatabaseVersion)"1.2.3";
 
             // Assert
-            Assert.AreEqual(1, version.Major);
-            Assert.AreEqual(2, version.Minor);
-            Assert.AreEqual(3, version.Patch);
+            version.Major.Should().Be(1);
+            version.Minor.Should().Be(2);
+            version.Patch.Should().Be(3);
         }
 
         [TestCaseSource(nameof(EqualOperator_TestCases))]
@@ -132,7 +133,7 @@ namespace Kot.MongoDB.Migrations.Tests
             bool actualResult = versionA == versionB;
 
             // Assert
-            Assert.AreEqual(expectedResult, actualResult);
+            actualResult.Should().Be(expectedResult);
         }
 
         [TestCaseSource(nameof(NotEqualOperator_TestCases))]
@@ -142,7 +143,7 @@ namespace Kot.MongoDB.Migrations.Tests
             bool actualResult = versionA != versionB;
 
             // Assert
-            Assert.AreEqual(expectedResult, actualResult);
+            actualResult.Should().Be(expectedResult);
         }
 
         [TestCaseSource(nameof(GreaterOperator_TestCases))]
@@ -152,7 +153,7 @@ namespace Kot.MongoDB.Migrations.Tests
             bool actualResult = versionA > versionB;
 
             // Assert
-            Assert.AreEqual(expectedResult, actualResult);
+            actualResult.Should().Be(expectedResult);
         }
 
         [TestCaseSource(nameof(GreaterOrEqualOperator_TestCases))]
@@ -162,7 +163,7 @@ namespace Kot.MongoDB.Migrations.Tests
             bool actualResult = versionA >= versionB;
 
             // Assert
-            Assert.AreEqual(expectedResult, actualResult);
+            actualResult.Should().Be(expectedResult);
         }
 
         [TestCaseSource(nameof(LessOperator_TestCases))]
@@ -172,7 +173,7 @@ namespace Kot.MongoDB.Migrations.Tests
             bool actualResult = versionA < versionB;
 
             // Assert
-            Assert.AreEqual(expectedResult, actualResult);
+            actualResult.Should().Be(expectedResult);
         }
 
         [TestCaseSource(nameof(LessOrEqualOperator_TestCases))]
@@ -182,7 +183,7 @@ namespace Kot.MongoDB.Migrations.Tests
             bool actualResult = versionA <= versionB;
 
             // Assert
-            Assert.AreEqual(expectedResult, actualResult);
+            actualResult.Should().Be(expectedResult);
         }
 
         private static IEnumerable<TestCaseData> ParseVersion_Success_TestCases() => new[]

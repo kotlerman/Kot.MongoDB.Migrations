@@ -10,7 +10,7 @@ namespace Kot.MongoDB.Migrations.Tests.Extensions
         public static EquivalencyAssertionOptions<T> UsingNonStrictDateTimeComparison<T>(this EquivalencyAssertionOptions<T> options)
         {
             return options.Using<DateTime>(x => x.Subject.Should().BeCloseTo(DateTime.UtcNow, 1.Minutes()))
-                .When(x => x.Type == typeof(DateTime));
+                .When(x => x.CompileTimeType == typeof(DateTime));
         }
     }
 }

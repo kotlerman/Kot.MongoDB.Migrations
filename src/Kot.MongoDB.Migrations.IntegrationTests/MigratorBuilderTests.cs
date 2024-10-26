@@ -322,8 +322,10 @@ namespace Kot.MongoDB.Migrations.IntegrationTests
             SyntaxTree syntaxTree = CSharpSyntaxTree.ParseText(code);
             MetadataReference[] references = new[]
             {
+#if NET6_0
                 MetadataReference.CreateFromFile(Assembly.Load("netstandard, Version=2.0.0.0").Location),
                 MetadataReference.CreateFromFile(Assembly.Load("System.Runtime, Version=6.0.0.0").Location),
+#endif
                 MetadataReference.CreateFromFile(typeof(object).GetTypeInfo().Assembly.Location),
                 MetadataReference.CreateFromFile(typeof(MongoClient).GetTypeInfo().Assembly.Location),
                 MetadataReference.CreateFromFile(typeof(MongoMigration).GetTypeInfo().Assembly.Location),
