@@ -24,13 +24,15 @@ jobs:
       run: dotnet restore
     - name: Build
       run: dotnet build -c Release --no-restore
-    - name: Test
-      run: dotnet test -c Release --no-build --verbosity normal -m:1 --results-directory ../TestResults -p:CollectCoverage=true -p:CoverletOutputFormat='"json,lcov"' -p:CoverletOutput=../TestResults/ -p:MergeWith=../TestResults/coverage.json
+    - name: Test .NET Framework 4.7.2
+      run: dotnet test -f net472 -c Release --no-build --verbosity normal -m:1 --results-directory ../TestResults -p:CollectCoverage=true -p:CoverletOutputFormat='"json,lcov"' -p:CoverletOutput=../TestResults/ -p:MergeWith=../TestResults/coverage.net472.json
+    - name: Test .NET 6
+      run: dotnet test -f net6 -c Release --no-build --verbosity normal -m:1 --results-directory ../TestResults -p:CollectCoverage=true -p:CoverletOutputFormat='"json,lcov"' -p:CoverletOutput=../TestResults/ -p:MergeWith=../TestResults/coverage.net6.json
     - name: Coveralls
       uses: coverallsapp/github-action@master
       with:
         github-token: ${{ secrets.GITHUB_TOKEN }}
-        path-to-lcov: ./src/TestResults/coverage.info
+        path-to-lcov: ./src/TestResults/coverage.net6.info
     - name: Pack
       run: dotnet pack -c Release --no-build -o ../packages
     - name: Archive packages
