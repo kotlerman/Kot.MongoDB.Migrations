@@ -36,7 +36,7 @@ jobs:
     - name: Pack
       run: dotnet pack -c Release --no-build -o ../packages
     - name: Archive packages
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v6
       with:
         name: packages
         path: packages
