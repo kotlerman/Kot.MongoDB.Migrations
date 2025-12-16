@@ -1,6 +1,7 @@
 [![Build](https://github.com/kotlerman/Kot.MongoDB.Migrations/actions/workflows/build.yml/badge.svg)](https://github.com/kotlerman/Kot.MongoDB.Migrations/actions/workflows/build.yml)
 [![Coverage Status](https://coveralls.io/repos/github/kotlerman/Kot.MongoDB.Migrations/badge.svg?branch=main)](https://coveralls.io/github/kotlerman/Kot.MongoDB.Migrations?branch=main)
 [![License](https://img.shields.io/badge/License-MIT-blue)](https://github.com/kotlerman/Kot.MongoDB.Migrations/blob/main/LICENSE)
+[![License](https://img.shields.io/nuget/v/Kot.MongoDB.Migrations)](https://www.nuget.org/packages/Kot.MongoDB.Migrations/)
 
 # Kot.MongoDB.Migrations
 This package enables you to create and run MongoDb migrations. Simple and clean, with minimal dependencies. Supports wrapping migrations in a transaction. To use with DI containers, see [Kot.MongoDB.Migrations.DI](#kotmongodbmigrationsdi) below.
