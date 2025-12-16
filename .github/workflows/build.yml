@@ -8,7 +8,7 @@ on:
 
 jobs:
   build:
-    runs-on: windows-latest
+    runs-on: ubuntu-latest
 
     defaults:
       run:
@@ -24,6 +24,20 @@ jobs:
       run: dotnet restore
     - name: Build
       run: dotnet build -c Release --no-restore
+    - name: Install Mono
+      run: |
+        sudo apt update
+        sudo apt install -y ca-certificates gnupg
+        sudo gpg --homedir /tmp \
+          --no-default-keyring \
+          --keyring gnupg-ring:/usr/share/keyrings/mono-official-archive-keyring.gpg \
+          --keyserver hkp://keyserver.ubuntu.com:80 \
+          --recv-keys 3FA7E0328081BFF6A14DA29AA6A19B38D3D831EF
+        sudo chmod +r /usr/share/keyrings/mono-official-archive-keyring.gpg
+        echo "deb [signed-by=/usr/share/keyrings/mono-official-archive-keyring.gpg] https://download.mono-project.com/repo/ubuntu stable-focal main" \
+          | sudo tee /etc/apt/sources.list.d/mono-official-stable.list
+        sudo apt update
+        sudo apt install -y mono-complete
     - name: Test .NET Framework 4.7.2
       run: dotnet test -f net472 -c Release --no-build --verbosity normal -m:1 --results-directory ../TestResults -p:CollectCoverage=true -p:CoverletOutputFormat='"json,lcov"' -p:CoverletOutput=../TestResults/ -p:MergeWith=../TestResults/coverage.net472.json
     - name: Test .NET 6
