@@ -8,8 +8,8 @@
   </PropertyGroup>
 
   <PropertyGroup>
-    <PackageVersion>3.0.0</PackageVersion>
-    <AssemblyVersion>3.0.0.0</AssemblyVersion>
+    <PackageVersion>3.1.0-beta</PackageVersion>
+    <AssemblyVersion>3.1.0.0</AssemblyVersion>
     <Description>DI support for Kot.MongoDB.Migrations</Description>
     <PackageTags>mongodb;mongodb-driver;mongo;migration;migrations;transactions;di</PackageTags>
   </PropertyGroup>
